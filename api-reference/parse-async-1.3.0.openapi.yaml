@@ -1,0 +1,396 @@
+openapi: 3.0.3
+info:
+  title: XParse Parse Async API
+  description: |
+    Standalone asynchronous API for document parsing, supporting asynchronous processing of document parsing tasks.
+
+    This API is suitable for handling large files or batch files. Query processing status and results via job_id to avoid long waiting times.
+  version: 1.0.0
+  contact:
+    name: TextIn API Team
+
+servers:
+  - url: https://api.textin.com
+    description: Production Environment
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /api/v1/xparse/parse/async:
+    post:
+      summary: Create Async Parse Job
+      description: |
+        Create an asynchronous document parsing job, returns job_id immediately. Query processing status and results via job_id.
+
+        Suitable for handling large files or batch files, avoiding HTTP timeout limitations.
+      operationId: createParseAsyncJob
+      tags:
+        - XParse Parse
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Upload document file, choose either file or file_url
+                file_url:
+                  type: string
+                  description: Document URL, choose either file_url or file
+                config:
+                  allOf:
+                    - $ref: '#/components/schemas/ParseConfig'
+                  example:
+                    # schema_version: "1.3.0"
+                    document:
+                      password: "example-pdf-password"
+                    capabilities:
+                      include_hierarchy: true
+                      include_inline_objects: true
+                      include_char_details: true
+                      include_image_data: true
+                      include_table_structure: true
+                      pages: true
+                      title_tree: true
+                      table_view: "html"
+                      remove_watermark: true
+                      crop_dewarp: true
+                    scope:
+                      page_range: "1-2"
+                    config:
+                      force_engine: "textin"
+                      engine_params:
+                        parse_mode: "scan"
+                        formula_level: 0
+                        image_output_type: "url"
+                        recognize_chemical: true
+                webhook:
+                  type: string
+                  description: |
+                    Webhook callback URL (optional). This URL will be invoked when the task is completed or failed.
+
+                    Webhook request format:
+                    - Method: POST
+                    - Content-Type: application/json
+                    - Body: {"job_id": "xxx", "status": "completed", "result_url": "https://..."}
+                  example: "https://your-server.com/webhook"
+            encoding:
+              config:
+                contentType: application/json
+      responses:
+        '200':
+          description: Job created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/codemessage'
+                  - $ref: '#/components/schemas/CreateJobResponse'
+              examples:
+                success:
+                  summary: Success Example
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      job_id: "c020a1f03c994091a94d6763cdbe0684"
+                error:
+                  summary: Error Example
+                  value:
+                    code: 40004
+                    message: "Parameter error"
+                    data:
+                      message: "File not uploaded"
+
+  /api/v1/xparse/parse/async/{job_id}:
+    get:
+      summary: Query Async Parse Job Status
+      description: |
+        Query the processing status and results of an asynchronous parsing job via job_id.
+
+        Job statuses include:
+        - pending: Queued
+        - in_progress: Processing
+        - completed: Completed
+        - failed: Failed
+      operationId: getParseAsyncJobStatus
+      tags:
+        - XParse Parse
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: Job ID
+          schema:
+            type: string
+          example: "xxx"
+      responses:
+        '200':
+          description: Job Status
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/codemessage'
+                  - $ref: '#/components/schemas/JobStatusResponse'
+              examples:
+                pending:
+                  summary: Queued
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      job_id: "c020a1f03c994091a94d6763cdbe0684"
+                      file_id: "00c685bad97544609d3607885d76bdc4"
+                      status: "pending"
+                in_progress:
+                  summary: Processing
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      job_id: "c020a1f03c994091a94d6763cdbe0684"
+                      file_id: "00c685bad97544609d3607885d76bdc4"
+                      status: "in_progress"
+                completed:
+                  summary: Completed
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      job_id: "c020a1f03c994091a94d6763cdbe0684"
+                      file_id: "00c685bad97544609d3607885d76bdc4"
+                      status: "completed"
+                      result_url: "https://web-api.textin.com/file/xparse_result/xxx"
+                failed:
+                  summary: Failed
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      job_id: "c020a1f03c994091a94d6763cdbe0684"
+                      file_id: "00c685bad97544609d3607885d76bdc4"
+                      status: "failed"
+                      message: "error message"
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: 'Please [login to Textin](https://www.textin.com/console/dashboard/setting) and navigate to "Dashboard - Account Settings - Developer Info" to view x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: 'Please [login to Textin](https://www.textin.com/console/dashboard/setting) and navigate to "Dashboard - Account Settings - Developer Info" to view x-ti-secret-code'
+
+  schemas:
+    # ──────────────────────────────────────
+    # Request config
+    # ──────────────────────────────────────
+    ParseConfig:
+      type: object
+      description: Parse configuration parameters
+      properties:
+        # schema_version:
+        #   type: string
+        #   default: '1.3.0'
+        #   description: Target schema version
+        document:
+          $ref: '#/components/schemas/DocumentConfig'
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
+        scope:
+          $ref: '#/components/schemas/Scope'
+        config:
+          $ref: '#/components/schemas/ExpertConfig'
+
+    DocumentConfig:
+      type: object
+      description: Document-related configuration
+      properties:
+        password:
+          type: string
+          description: Document password (e.g., for encrypted PDF)
+
+    Capabilities:
+      type: object
+      description: Parse strategy and format configuration
+      properties:
+        include_hierarchy:
+          type: boolean
+          default: true
+          description: Whether to return hierarchy and relationship fields between elements. When enabled, returns parent-child relationships, reference relationships, and other information between elements (such as parent_id, children_ids, ref_element_id), used to express the structured relationship graph of the document.
+        include_inline_objects:
+          type: boolean
+          default: false
+          description: Whether to return fine-grained objects. When enabled, text elements will return fine-grained objects contained within them (such as formulas, images, handwritten signatures, checkboxes, etc.). If table structure is also enabled, inline objects within table cells will be identified and returned.
+        include_char_details:
+          type: boolean
+          default: false
+          description: Whether to return character-level details (char_details). When enabled, returns detailed information for each character in the text (such as coordinates, confidence, candidate characters). If table structure is also enabled, characters within table cells will also return these details.
+        include_image_data:
+          type: boolean
+          default: false
+          description: Whether to return image data (image_data). When enabled, image elements will return complete image data (including image URL, MIME type, Base64 encoding, and recognized text in the image). If images appear as inline objects in text or table cells, the system will automatically supplement the corresponding image information.
+        include_table_structure:
+          type: boolean
+          default: false
+          description: Whether to return detailed structured information for tables. When enabled, returns rows, columns, and detailed information for each cell in JSON format.
+        pages:
+          type: boolean
+          default: false
+          description: Whether to return page metadata list, including page number, width and height, rotation angle, rendered image URL (page_image_url), list of contained elements (element_ids), etc.
+        title_tree:
+          type: boolean
+          default: false
+          description: Whether to return the title tree (table of contents).
+        table_view:
+          type: string
+          enum: [markdown, html]
+          default: html
+          description: Format for table representation in markdown.
+        remove_watermark:
+          type: boolean
+          default: false
+          description: Whether to perform watermark removal preprocessing on the document.
+        crop_dewarp:
+          type: boolean
+          default: false
+          description: Whether to perform crop and dewarp preprocessing on the document.
+
+    Scope:
+      type: object
+      description: Processing range control
+      properties:
+        page_range:
+          type: string
+          description: Page range, starts from 1, supports multiple closed intervals, e.g., "1-2,3-4,5-10"
+          example: '1-5'
+
+    ExpertConfig:
+      type: object
+      description: Advanced configuration (expert mode)
+      properties:
+        force_engine:
+          type: string
+          enum: [textin, textin_gui]
+          description: Force specify internal engine, only used in expert mode.
+        engine_params:
+          type: object
+          additionalProperties: true
+          description: Engine-level custom parameters
+
+    codemessage:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          default: 200
+          description: |
+            Status code
+            - 200: Success
+            - 40101: x-ti-app-id or x-ti-secret-code is empty
+            - 40102: x-ti-app-id or x-ti-secret-code is invalid, authentication failed
+            - 40004: Parameter error, please check technical documentation and verify parameters
+            - 500: Internal server error
+
+            For more detailed error information, refer to [Error Code Description](/xparse/v1/parse-response#常见错误码).
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40004
+            - 500
+        message:
+          type: string
+          description: Error message
+          example: "success"
+
+    CreateJobResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/CreateJobData'
+
+    CreateJobData:
+      type: object
+      required:
+        - job_id
+      properties:
+        job_id:
+          type: string
+          description: Job ID, used to query job status
+          example: "c020a1f03c994091a94d6763cdbe0684"
+
+    JobStatusResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/JobStatusData'
+
+    JobStatusData:
+      type: object
+      required:
+        - job_id
+        - file_id
+        - status
+      properties:
+        job_id:
+          type: string
+          description: Job ID
+          example: "c020a1f03c994091a94d6763cdbe0684"
+        file_id:
+          type: string
+          description: File ID
+          example: "00c685bad97544609d3607885d76bdc4"
+        status:
+          type: string
+          description: |
+            Job status
+            - pending: Queued
+            - in_progress: Processing
+            - completed: Completed
+            - failed: Failed
+          enum: [pending, in_progress, completed, failed]
+          example: "completed"
+        result_url:
+          type: string
+          description: |
+            Result download URL (returned only when status is completed)
+
+            The parsing result can be downloaded via this URL. The result format is consistent with the synchronous API.
+          example: "https://web-api.textin.com/file/xparse_result/xxx"
+        message:
+          type: string
+          description: Error message (returned only when status is failed)
+          example: "error message"
+
+tags:
+  - name: XParse Parse
+    description: |
+      Standalone asynchronous API for document parsing
+
+      ## Features
+      - 📄 Asynchronous Processing: Supports large files and batch file processing
+      - 🔔 Webhook Support: Supports task completion callback notifications
+      - 📊 Status Query: Query task status via job_id
+      - ⏱️ No Timeout Limit: Avoids HTTP timeout issues
+
+      ## Billing Information
+      - Billed based on the number of pages processed
+      - Billing information is associated via x-ti-app-id and x-ti-secret-code

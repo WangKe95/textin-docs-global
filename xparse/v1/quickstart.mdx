@@ -1,0 +1,441 @@
+---
+title: "Quick Start"
+description: "Parse your first document in 5 minutes using Python SDK or REST API to convert documents into structured data."
+---
+
+<Tip>
+  We recommend using the **Python SDK** for quick setup. If you prefer direct REST API calls, refer to the [REST API Examples](#rest-api-examples) below.
+</Tip>
+
+## Key Improvements in the New Version
+
+Compared to the legacy document parsing solution, the new version delivers significant enhancements:
+
+<CardGroup cols={2}>
+  <Card title="Lightweight Data Structure" icon="box">
+    Built on standardized Element models with a cleaner, more intuitive structure. Smaller JSON payloads ensure faster transmission.
+  </Card>
+  <Card title="Standardized I/O Protocol" icon="file-code">
+    Unified request configuration (Config) and response structure (Schema) compatible with multiple parsing engines for seamless integration and migration.
+  </Card>
+  <Card title="Swappable Engines" icon="arrows-rotate">
+    Support for multiple parsing engines (TextIn and GUI), allowing you to select the optimal engine for your use case or compare results across engines.
+  </Card>
+  <Card title="Async API Support" icon="clock">
+    New asynchronous parsing endpoints for large files and batch processing scenarios, preventing HTTP timeouts. Webhook callbacks eliminate the need for polling.
+  </Card>
+</CardGroup>
+
+<Tip>
+  **New GUI Recognition Engine for Precise UI Element Parsing**
+
+  Designed specifically for desktop, mobile, and web interface screenshots, the GUI engine identifies UI element types (buttons, input fields, checkboxes, etc.) along with their positions, text content, and interaction states. See the parsing results below:
+
+  ![GUI Engine Parsing Example](https://web-api.textin.com/open/image/download?filename=586d64e8cb084f3990640649fad7f2ac)
+
+  **Learn More**: [GUI Engine Configuration](/xparse/v1/parse-config#force-engine)
+</Tip>
+
+---
+
+## Prerequisites
+
+### 1. Obtain API Credentials
+
+Navigate to [TextIn Console - Account & Developer Settings](https://www.textin.com/console/dashboard/setting) to retrieve your `x-ti-app-id` and `x-ti-secret-code`.
+
+For detailed instructions, see [API Key Guide](/xparse/api-key).
+
+### 2. Prepare a Sample Document
+
+You can use your own document or download our sample file: [Document Parsing Sample.pdf](https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf)
+
+<Info>
+  Supported file formats: png, jpg, jpeg, pdf, bmp, tiff, webp, doc, docx, html, mhtml, xls, xlsx, csv, ppt, pptx, txt, ofd, rtf
+
+  Maximum file size: 500MB
+</Info>
+
+---
+
+## Using Python SDK (Recommended)
+
+### Step 1: Install SDK
+
+<CodeGroup>
+
+```bash pip
+pip install xparse-client
+```
+
+```bash uv
+uv add xparse-client
+```
+
+</CodeGroup>
+
+### Step 2: Configure Environment Variables
+
+```bash
+export TEXTIN_APP_ID="your-app-id"
+export TEXTIN_SECRET_CODE="your-secret-code"
+```
+
+### Step 3: Parse Document
+
+```python
+from xparse_client import XParseClient, ParseConfig, Capabilities
+
+# Initialize client (automatically reads environment variables)
+client = XParseClient()
+
+# Parse local file
+with open("document.pdf", "rb") as f:
+    result = client.parse.run(
+        file=f,
+        filename="document.pdf",
+        config=ParseConfig(
+            capabilities=Capabilities(
+                include_table_structure=True,
+                title_tree=True,
+            ),
+        ),
+    )
+```
+
+<Tip>
+  The example above uses basic configuration. You can customize additional capabilities through `ParseConfig`, such as character details, inline objects, image data, and more. See [Parse Configuration Guide](/xparse/v1/parse-config).
+</Tip>
+
+### Step 4: View Results
+
+```python
+# Output Markdown
+if result.markdown:
+    print(result.markdown)
+
+# Iterate through document elements
+for el in result.elements:
+    print(f"[{el.type}] {el.text[:80]}")
+
+print(f"Total elements parsed: {len(result.elements)}")
+```
+
+### Step 5: Save Results
+
+```python
+import json
+
+# Save as Markdown file
+with open("output.md", "w", encoding="utf-8") as f:
+    f.write(result.markdown)
+
+# Save complete JSON result
+with open("output.json", "w", encoding="utf-8") as f:
+    json.dump(result.model_dump(), f, ensure_ascii=False, indent=2)
+```
+
+### Complete Code (Ready to Run)
+
+```python quickstart.py expandable
+"""
+Usage:
+  1. Install dependencies: pip install xparse-client
+  2. Set environment variables TEXTIN_APP_ID and TEXTIN_SECRET_CODE
+  3. python quickstart.py <file_path>
+"""
+
+import json
+import sys
+from pathlib import Path
+
+from xparse_client import XParseClient, ParseConfig, Capabilities
+
+
+def main():
+    # Get file path from command-line argument, defaults to document.pdf
+    file_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("document.pdf")
+    if not file_path.exists():
+        print(f"File not found: {file_path}")
+        sys.exit(1)
+
+    # Step 1: Initialize client (automatically reads TEXTIN_APP_ID, TEXTIN_SECRET_CODE from environment)
+    client = XParseClient()
+
+    # Step 2: Parse document
+    with open(file_path, "rb") as f:
+        result = client.parse.run(
+            file=f,
+            filename=file_path.name,
+            config=ParseConfig(
+                capabilities=Capabilities(
+                    include_table_structure=True,
+                    title_tree=True,
+                ),
+            ),
+        )
+
+    # Step 3: Print parsing overview
+    print(f"Parsing complete! {len(result.elements)} elements, {result.success_count} pages successful")
+    print("=" * 60)
+
+    # Output Markdown
+    if result.markdown:
+        print(result.markdown[:2000])
+        if len(result.markdown) > 2000:
+            print(f"\n... (Markdown has {len(result.markdown)} characters, truncated)")
+    print("=" * 60)
+
+    # Iterate through document elements
+    for el in result.elements:
+        print(f"  [{el.type:20s}] p{el.page_number}: {el.text[:60]}")
+
+    # Step 4: Save results
+    output_dir = Path("output")
+    output_dir.mkdir(exist_ok=True)
+
+    stem = file_path.stem
+
+    md_path = output_dir / f"{stem}.md"
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write(result.markdown)
+    print(f"\nMarkdown saved: {md_path}")
+
+    json_path = output_dir / f"{stem}.json"
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(result.model_dump(), f, ensure_ascii=False, indent=2)
+    print(f"JSON saved:     {json_path}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+<Tip>
+  For more SDK usage patterns, refer to the [Python SDK Documentation](/xparse/v1/sdk-python).
+</Tip>
+
+---
+
+## REST API Examples
+
+If you prefer not to use the Python SDK, you can directly call the [REST API](/api-reference/endpoint/xparse/v1/parse-sync).
+
+### Synchronous Parsing
+
+<CodeGroup>
+
+```python Python
+import requests
+import json
+
+app_id = "your-app-id"
+secret_code = "your-secret-code"
+
+with open("document.pdf", "rb") as f:
+    response = requests.post(
+        "https://api.textin.com/api/v1/xparse/parse/sync",
+        headers={
+            "x-ti-app-id": app_id,
+            "x-ti-secret-code": secret_code,
+        },
+        files={"file": ("document.pdf", f)},
+        data={
+            "config": json.dumps({
+                "capabilities": {
+                    "include_table_structure": True,
+                    "title_tree": True
+                }
+            })
+        },
+    )
+
+result = response.json()
+print(result["data"]["markdown"])
+```
+
+```bash cURL
+curl -X POST "https://api.textin.com/api/v1/xparse/parse/sync" \
+  -H "x-ti-app-id: your-app-id" \
+  -H "x-ti-secret-code: your-secret-code" \
+  -F "file=@document.pdf" \
+  -F 'config={"capabilities":{"include_table_structure":true,"title_tree":true}}'
+```
+
+</CodeGroup>
+
+<Note>
+  The `config` parameter supports extensive configuration options, including hierarchical relationships, character details, inline objects, image data, and more. For complete configuration details, see [Parse Configuration Guide](/xparse/v1/parse-config).
+</Note>
+
+### Asynchronous Parsing (For Large Files)
+
+For large files or batch processing scenarios, we recommend using the asynchronous API:
+
+```python
+import requests
+import json
+import time
+
+app_id = "your-app-id"
+secret_code = "your-secret-code"
+headers = {
+    "x-ti-app-id": app_id,
+    "x-ti-secret-code": secret_code,
+}
+
+# Step 1: Create async task
+with open("large_document.pdf", "rb") as f:
+    response = requests.post(
+        "https://api.textin.com/api/v1/xparse/parse/async",
+        headers=headers,
+        files={"file": ("large_document.pdf", f)},
+    )
+
+job_id = response.json()["data"]["job_id"]
+print(f"Task created: {job_id}")
+
+# Step 2: Poll for task status
+while True:
+    status_resp = requests.get(
+        f"https://api.textin.com/api/v1/xparse/parse/async/{job_id}",
+        headers=headers,
+    )
+    status_data = status_resp.json()["data"]
+
+    if status_data["status"] == "completed":
+        print("Parsing complete!")
+        print(status_data)
+        
+        # Step 3: Retrieve actual results via result_url
+        result_url = status_data["result_url"]
+        result_resp = requests.get(result_url, headers=headers)
+        result_data = result_resp.json()
+        
+        # Output element information
+        print(f"Total elements parsed: {len(result_data['elements'])}")
+        for element in result_data["elements"][:5]:
+            print(f"[{element['type']}] {element['text'][:50]}")
+        break
+        
+    elif status_data["status"] == "failed":
+        print(f"Parsing failed: {status_data.get('message', 'Unknown error')}")
+        break
+
+    print(f"Status: {status_data['status']}, waiting...")
+    time.sleep(5)
+```
+
+<Tip>
+  The async API also supports `webhook` callbacks to eliminate polling. See [Async Parse API Documentation](/api-reference/endpoint/xparse/v1/parse-async).
+</Tip>
+
+---
+
+## Understanding the Response
+
+Upon successful parsing, the core response structure is as follows:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "schema_version": "1.3.0",
+    "file_id": "doc_7f3a2b",
+    "job_id": "job_x9k2m",
+    "success_count": 5,
+    "metadata": {
+      "filename": "document.pdf",
+      "filetype": "application/pdf",
+      "page_count": 5,
+      "data_source": {
+        "record_locator": {
+          "protocol": "file",
+          "remote_file_path": "/path/to/document.pdf"
+        },
+        "url": "file:///path/to/document.pdf"
+      }
+    },
+    "markdown": "# Document Title\n\nThis is the body content...\n\n| Column 1 | Column 2 |\n|---|---|\n| Value 1 | Value 2 |",
+    "elements": [
+      {
+        "element_id": "el_001",
+        "type": "Title",
+        "text": "Document Title",
+        "page_number": 1,
+        "coordinates": [0.100000, 0.120000, 0.320000, 0.120000, 0.320000, 0.160000, 0.100000, 0.160000],
+        "metadata": {
+          "category_depth": 0,
+          "children_ids": ["el_002"],
+          "is_continuation": false,
+          "data_source": {
+            "record_locator": {
+              "protocol": "file",
+              "remote_file_path": "/path/to/document.pdf"
+            },
+            "url": "file:///path/to/document.pdf"
+          }
+        }
+      },
+      {
+        "element_id": "el_002",
+        "type": "NarrativeText",
+        "text": "This is the body content...",
+        "page_number": 1,
+        "coordinates": [0.100000, 0.180000, 0.900000, 0.180000, 0.900000, 0.220000, 0.100000, 0.220000],
+        "metadata": {
+          "parent_id": "el_001",
+          "is_continuation": false,
+          "data_source": {
+            "record_locator": {
+              "protocol": "file",
+              "remote_file_path": "/path/to/document.pdf"
+            },
+            "url": "file:///path/to/document.pdf"
+          }
+        }
+      }
+    ]
+  }
+}
+```
+
+| Field | Description |
+|------|-------------|
+| `schema_version` | Data structure version, currently `"1.3.0"` |
+| `file_id` | Unique file identifier |
+| `job_id` | Unique task identifier |
+| `success_count` | Number of successfully parsed pages (billing basis) |
+| `metadata` | File metadata (filename, type, page count, data source, etc.) |
+| `markdown` | Markdown representation of the document, directly usable for LLM input |
+| `elements` | List of document elements, each containing type, text, coordinates, metadata, and other detailed information |
+
+<Info>
+  For comprehensive response structure details, refer to [Response Structure Guide](/xparse/v1/parse-response).
+</Info>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Parse Configuration Guide" icon="sliders" href="/xparse/v1/parse-config">
+    Explore all input parameter configurations including capability switches, processing scope, engine selection, and more
+  </Card>
+  <Card title="Response Structure Guide" icon="code" href="/xparse/v1/parse-response">
+    Learn about Elements, coordinates, table structures, and complete response fields
+  </Card>
+  <Card title="Python SDK" icon="python" href="/xparse/v1/sdk-python">
+    Advanced SDK usage: async tasks, error handling, custom configurations
+  </Card>
+  <Card title="API Reference" icon="book" href="/api-reference/endpoint/xparse/v1/parse-sync">
+    Complete API parameter and response documentation
+  </Card>
+  <Card title="Async Parsing" icon="clock" href="/api-reference/endpoint/xparse/v1/parse-async">
+    Use async API for large files and batch tasks
+  </Card>
+  <Card title="Billing Information" icon="credit-card" href="/xparse/v1/charge">
+    Understand pricing and billing rules
+  </Card>
+</CardGroup>

@@ -1,0 +1,1012 @@
+openapi: 3.0.3
+info:
+  title: XParse Parse Sync API
+  description: |
+    Intelligent Document Parsing
+  version: 1.3.0
+  contact:
+    name: TextIn API Team
+
+servers:
+  - url: https://api.textin.com
+    description: Production Environment
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /api/v1/xparse/parse/sync:
+    post:
+      summary: Document Parsing
+      description: |
+        Parse unstructured documents (image/pdf/word/html/excel/ppt/txt, etc.) into AI-friendly structured data (JSON, Markdown), with rich metadata (traceable, explainable, and verifiable)
+      operationId: parseSync
+      tags:
+        - XParse Parse
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Upload document file, mutually exclusive with file_url
+                file_url:
+                  type: string
+                  description: Document URL, mutually exclusive with file
+                config:
+                  allOf:
+                    - $ref: '#/components/schemas/ParseConfig'
+                  example:
+                    # schema_version: "1.3.0"
+                    document:
+                      password: "example-pdf-password"
+                    capabilities:
+                      include_hierarchy: true
+                      include_inline_objects: true
+                      include_char_details: true
+                      include_image_data: true
+                      include_table_structure: true
+                      pages: true
+                      title_tree: true
+                      table_view: "html"
+                      remove_watermark: true
+                      crop_dewarp: true
+                    scope:
+                      page_range: "1-2"
+                    config:
+                      force_engine: "textin"
+                      engine_params:
+                        parse_mode: "scan"
+                        formula_level: 0
+                        image_output_type: "url"
+                        recognize_chemical: true
+            encoding:
+              file:
+                contentType: application/octet-stream
+              config:
+                contentType: application/json
+      responses:
+        '200':
+          description: Parsing Result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                success:
+                  summary: Success Example
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      schema_version: "1.3.0"
+                      file_id: "doc_7f3a2b"
+                      job_id: "job_x9k2m"
+                      success_count: 2
+                      metadata:
+                        filename: "quarterly_report.pdf"
+                        filetype: "application/pdf"
+                        page_count: 2
+                        data_source:
+                          record_locator:
+                            protocol: "file"
+                            remote_file_path: "/projects/demo/quarterly_report.pdf"
+                          url: "file:///projects/demo/quarterly_report.pdf"
+                      markdown: "# 检验结果\n\n<table>\n  <thead>\n    <tr><th>项目</th><th>公式项</th><th>参考范围</th></tr>\n  </thead>\n  <tbody>\n    <tr><td>空腹血糖</td><td>x^2+1</td><td>3.9-6.1</td></tr>\n  </tbody>\n</table>\n\n乙方签字：李四\n\n设违约金函数f(x)=x^2+1。\n该违约金函数适用于逾期超过30日的场景。"
+                      elements:
+                        - element_id: "el_001"
+                          type: "Title"
+                          text: "检验结果"
+                          page_number: 1
+                          coordinates: [0.10, 0.12, 0.32, 0.12, 0.32, 0.16, 0.10, 0.16]
+                          metadata:
+                            category_depth: 0
+                            children_ids: ["el_002", "el_003", "el_004", "el_005"]
+                            is_continuation: false
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                        - element_id: "el_002"
+                          type: "Table"
+                          text: "项目 公式项 参考范围\n空腹血糖 x^2+1 3.9-6.1"
+                          page_number: 1
+                          coordinates: [0.10, 0.20, 0.82, 0.20, 0.82, 0.36, 0.10, 0.36]
+                          metadata:
+                            parent_id: "el_001"
+                            ref_element_id: "el_001"
+                            is_continuation: false
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                          table_structure:
+                            rows: 2
+                            cols: 3
+                            cells:
+                              - cell_id: "tbl_001_r1_c1"
+                                row: 1
+                                col: 1
+                                row_span: 1
+                                col_span: 1
+                                content_type: "text"
+                                text: "项目"
+                                coordinates: [0.10, 0.20, 0.26, 0.20, 0.26, 0.24, 0.10, 0.24]
+                              - cell_id: "tbl_001_r2_c2"
+                                row: 2
+                                col: 2
+                                row_span: 1
+                                col_span: 1
+                                content_type: "formula"
+                                text: "x^2+1"
+                                coordinates: [0.33, 0.24, 0.52, 0.24, 0.52, 0.28, 0.33, 0.28]
+                                char_details:
+                                  - index: 0
+                                    text: "x"
+                                    coordinates: [0.33, 0.24, 0.34, 0.24, 0.34, 0.28, 0.33, 0.28]
+                                    recognition:
+                                      confidence: 0.998
+                                      candidates:
+                                        - text: "8"
+                                          confidence: 0.998
+                        - element_id: "el_003"
+                          type: "Image"
+                          sub_type: "diagram"
+                          text: ""
+                          page_number: 1
+                          coordinates: [0.56, 0.20, 0.80, 0.20, 0.80, 0.34, 0.56, 0.34]
+                          image_data:
+                            image_url: "https://example.com/fig-1.png"
+                            mime_type: "image/png"
+                          metadata:
+                            parent_id: "el_001"
+                            width: 640
+                            height: 360
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                        - element_id: "el_004"
+                          type: "NarrativeText"
+                          text: "乙方签字：李四"
+                          page_number: 1
+                          coordinates: [0.10, 0.40, 0.30, 0.40, 0.30, 0.46, 0.10, 0.46]
+                          metadata:
+                            parent_id: "el_001"
+                            has_inline_objects: true
+                            inline_object_types: ["handwriting"]
+                            is_continuation: false
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                          objects:
+                            - object_id: "obj_001"
+                              type: "handwriting"
+                              text: "李四"
+                              text_range: [5, 7]
+                              coordinates: [0.18, 0.40, 0.26, 0.40, 0.26, 0.46, 0.18, 0.46]
+                              metadata: {}
+                          char_details:
+                            - index: 0
+                              text: "乙"
+                              coordinates: [0.10, 0.40, 0.11, 0.40, 0.11, 0.46, 0.10, 0.46]
+                              recognition:
+                                confidence: 0.997
+                                candidates:
+                                  - text: "乙"
+                                    confidence: 0.997
+                        - element_id: "el_005"
+                          type: "NarrativeText"
+                          text: "设违约金函数f(x)=x^2+1。"
+                          page_number: 1
+                          coordinates: [0.10, 0.48, 0.36, 0.48, 0.36, 0.54, 0.10, 0.54]
+                          metadata:
+                            parent_id: "el_001"
+                            is_continuation: false
+                            has_inline_objects: true
+                            inline_object_types: ["formula"]
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                          objects:
+                            - object_id: "obj_002"
+                              type: "formula"
+                              text: "x^2+1"
+                              text_range: [11, 16]
+                              coordinates: [0.22, 0.48, 0.30, 0.48, 0.30, 0.54, 0.22, 0.54]
+                              metadata:
+                                display_mode: "inline"
+                          char_details:
+                            - index: 0
+                              text: "设"
+                              coordinates: [0.10, 0.48, 0.11, 0.48, 0.11, 0.54, 0.10, 0.54]
+                              recognition:
+                                confidence: 0.999
+                                candidates:
+                                  - text: "设"
+                                    confidence: 0.999
+                        - element_id: "el_006"
+                          type: "NarrativeText"
+                          text: "该违约金函数适用于逾期超过30日的场景。"
+                          page_number: 2
+                          coordinates: [0.10, 0.10, 0.44, 0.10, 0.44, 0.16, 0.10, 0.16]
+                          metadata:
+                            is_continuation: true
+                            continuation_of: "el_005"
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                      title_tree:
+                        - element_id: "el_001"
+                          title: "检验结果"
+                          level: 1
+                          page_number: 1
+                          children: []
+                      pages:
+                        - page_number: 1
+                          page_width: 1576
+                          page_height: 1683
+                          page_image_url: "https://example.com/page-1.jpg"
+                          element_ids: ["el_001", "el_002", "el_003", "el_004", "el_005"]
+                          dpi: 144
+                          angle: 0
+                          status: "Success"
+                        - page_number: 2
+                          page_width: 1576
+                          page_height: 1683
+                          page_image_url: "https://example.com/page-2.jpg"
+                          element_ids: ["el_006"]
+                          dpi: 144
+                          angle: 0
+                          status: "Success"
+                      summary:
+                        duration_ms: 812
+                error:
+                  summary: Error Example
+                  value:
+                    code: 40004
+                    message: "Parameter error. Please check the technical documentation and verify the parameters."
+                    location:
+                      stage: "parse"
+                      page_number: 3
+                      element_id: "el_045"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Internal Server Error
+                  value:
+                    code: 500
+                    message: "Internal server error"
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: 'Please [log in to Textin](https://www.textin.com/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: 'Please [log in to Textin](https://www.textin.com/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-secret-code'
+
+  schemas:
+    # ──────────────────────────────────────
+    # Request config
+    # ──────────────────────────────────────
+    ParseConfig:
+      type: object
+      description: Parsing configuration parameters
+      properties:
+        # schema_version:
+        #   type: string
+        #   default: '1.3.0'
+        #   description: Target schema version
+        document:
+          $ref: '#/components/schemas/DocumentConfig'
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
+        scope:
+          $ref: '#/components/schemas/Scope'
+        config:
+          $ref: '#/components/schemas/ExpertConfig'
+
+    DocumentConfig:
+      type: object
+      description: Document-related configuration
+      properties:
+        password:
+          type: string
+          description: Document password (e.g., for encrypted PDF)
+
+    Capabilities:
+      type: object
+      description: Parsing strategy and format configuration
+      properties:
+        include_hierarchy:
+          type: boolean
+          default: true
+          description: Whether to return hierarchy and relationship fields between elements. When enabled, returns parent-child relationships, reference relationships, and other information between elements (such as parent_id, children_ids, ref_element_id) to express the structured relationship graph of the document.
+        include_inline_objects:
+          type: boolean
+          default: false
+          description: Whether to return fine-grained objects. When enabled, text elements will return the fine-grained objects they contain (such as formulas, images, handwritten signatures, checkboxes, etc.). If table structure is also enabled, inline objects within table cells will also be identified and returned.
+        include_char_details:
+          type: boolean
+          default: false
+          description: Whether to return character-level details (char_details). When enabled, returns detailed information for each character in the text (such as coordinates, confidence, candidate characters). If table structure is also enabled, characters within table cells will also return such details.
+        include_image_data:
+          type: boolean
+          default: false
+          description: Whether to return image data (image_data). When enabled, image elements will return complete image data (including image URL, MIME type, Base64 encoding, and text recognized in the image). If images appear as inline objects in text or table cells, the system will also automatically supplement corresponding image information.
+        include_table_structure:
+          type: boolean
+          default: false
+          description: Whether to return detailed structural information of tables. When enabled, returns the rows, columns, and detailed information of each cell in JSON format.
+        pages:
+          type: boolean
+          default: false
+          description: Whether to return page metadata list, including page number, width, height, rotation angle, rendered image URL (page_image_url), list of contained elements (element_ids), etc.
+        title_tree:
+          type: boolean
+          default: false
+          description: Whether to return the title tree (table of contents).
+        table_view:
+          type: string
+          enum: [markdown, html]
+          default: html
+          description: The format for tables in markdown.
+        remove_watermark:
+          type: boolean
+          default: false
+          description: Whether to perform watermark removal preprocessing on the document.
+        crop_dewarp:
+          type: boolean
+          default: false
+          description: Whether to perform cropping and dewarping preprocessing on the document.
+
+    Scope:
+      type: object
+      description: Processing scope control
+      properties:
+        page_range:
+          type: string
+          description: Page range, starting from 1, supports multiple closed intervals, e.g., "1-2,3-4,5-10"
+          example: '1-5'
+
+    ExpertConfig:
+      type: object
+      description: Advanced configuration (expert mode)
+      properties:
+        force_engine:
+          type: string
+          enum: [textin, textin_gui]
+          description: Force specify internal engine, for expert mode use only.
+        engine_params:
+          type: object
+          additionalProperties: true
+          description: Engine-level custom parameters
+
+    # ──────────────────────────────────────
+    # API response wrapper
+    # ──────────────────────────────────────
+    ApiResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: |
+            Status code
+            - 200: Success
+            - 40101: x-ti-app-id or x-ti-secret-code is empty
+            - 40102: x-ti-app-id or x-ti-secret-code is invalid, authentication failed
+            - 40103: Client IP is not in the whitelist
+            - 40003: Insufficient balance, please recharge before using
+            - 40004: Parameter error, please check the technical documentation and verify the parameters
+            - 40007: Robot does not exist or is not published
+            - 40008: Robot is not activated, please activate it from the market before retrying
+            - 40301: Image type not supported
+            - 40302: Uploaded file size does not meet requirements, file size must not exceed 500M
+            - 40303: File type not supported. The API will return the actual detected file type, e.g., "Current file type is .gif"
+            - 40304: Image dimensions do not meet requirements. Images with aspect ratio less than 2 must have width and height between 20~20000 pixels, other images must have width and height between 20~10000 pixels
+            - 40305: Recognition file not uploaded
+            - 40306: QPS exceeds limit
+            - 40307: Daily free quota exhausted
+            - 40422: The file is corrupted
+            - 40423: Password required or incorrect password
+            - 40424: Page number out of range
+            - 40425: The input file format is not supported
+            - 40427: Input DPI is not in the allowed DPIs list (72,144,216)
+            - 40428: Process office file failed or timeout
+            - 40429: Unsupported Engine
+            - 50207: Partial failed
+            - 40400: Invalid request URL, please check if the URL is correct
+            - 30203: Basic service failure, please retry later
+            - 500: Internal server error
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40103
+            - 40003
+            - 40004
+            - 40007
+            - 40008
+            - 40301
+            - 40302
+            - 40303
+            - 40304
+            - 40305
+            - 40306
+            - 40307
+            - 40422
+            - 40423
+            - 40424
+            - 40425
+            - 40427
+            - 40428
+            - 40429
+            - 50207
+            - 40400
+            - 30203
+            - 500
+          example: 200
+        message:
+          type: string
+          description: Status message
+          example: "success"
+        location:
+          $ref: '#/components/schemas/ErrorLocation'
+        data:
+          $ref: '#/components/schemas/ParseResponse'
+
+    ErrorLocation:
+      type: object
+      description: Error location information, returned only when parsing errors occur
+      properties:
+        stage:
+          type: string
+          description: Error stage
+        page_number:
+          type: integer
+          description: Page number where error occurred
+        element_id:
+          type: string
+          description: Element ID where error occurred
+
+    # ──────────────────────────────────────
+    # Response data
+    # ──────────────────────────────────────
+    ParseResponse:
+      type: object
+      required:
+        - schema_version
+        - file_id
+        - job_id
+        - success_count
+        - metadata
+        - elements
+      properties:
+        schema_version:
+          type: string
+          example: '1.3.0'
+        file_id:
+          type: string
+          description: Unique document identifier
+        job_id:
+          type: string
+          description: Unique task identifier
+        success_count:
+          type: integer
+          description: Billable page count / successful page count
+        metadata:
+          $ref: '#/components/schemas/DocumentMetadata'
+        elements:
+          type: array
+          description: Collection of basic semantic elements
+          items:
+            $ref: '#/components/schemas/Element'
+        title_tree:
+          type: array
+          items:
+            $ref: '#/components/schemas/TitleTreeNode'
+          description: Returned on demand, title tree (table of contents)
+        # table_objects:
+        #   type: array
+        #   items:
+        #     $ref: '#/components/schemas/TableObject'
+        #   description: Returned on demand, logical whole table aggregation objects (not yet implemented)
+        markdown:
+          type: string
+          description: Document-level Markdown
+        pages:
+          type: array
+          description: Page information list
+          items:
+            $ref: '#/components/schemas/Page'
+        summary:
+          $ref: '#/components/schemas/Summary'
+
+    DocumentMetadata:
+      type: object
+      description: Document metadata
+      properties:
+        filename:
+          type: string
+        filetype:
+          type: string
+          description: MIME type
+        page_count:
+          type: integer
+        data_source:
+          $ref: '#/components/schemas/DataSource'
+
+    # ──────────────────────────────────────
+    # Element
+    # ──────────────────────────────────────
+    Element:
+      type: object
+      required:
+        - element_id
+        - type
+        - text
+        - page_number
+        - coordinates
+        - metadata
+      properties:
+        element_id:
+          type: string
+          description: Unique element identifier
+        type:
+          type: string
+          description: |
+            Element type. **GUI engine uses different element types** (such as button, input, checkbox, etc.), see [GUI Element Types](#ui-element-types) for details.
+          enum:
+            - Title
+            - NarrativeText
+            - ListItem
+            - CodeSnippet
+            - UncategorizedText
+            - Table
+            - Image
+            - Formula
+            - Chemical
+            - Header
+            - Footer
+            - PageNumber
+            - FigureCaption
+            - PageBreak
+            - TableCaption
+        sub_type:
+          type: string
+          description: |
+           Element subtype, optional, used for further subdivision within the same main type:
+           | type | sub_type |
+           |---|---|
+           | Image | stamp, qrcode, barcode, chart |
+           | Table | bordered, borderless |
+        text:
+          type: string
+          description: Semantic text content of the element, serving as the textual representation of this element
+        page_number:
+          type: integer
+          minimum: 1
+          description: Page number where the element is located, starting from 1
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        objects:
+          type: array
+          items:
+            $ref: '#/components/schemas/InlineObject'
+          description: List of fine-grained objects appearing in order within the element, such as formulas, handwriting, checkboxes in paragraphs, returned only when include_inline_objects=true
+        table_structure:
+          $ref: '#/components/schemas/TableStructure'
+        char_details:
+          type: array
+          description: Character-level detailed information, returned only when include_char_details=true; applicable only to text elements
+          items:
+            $ref: '#/components/schemas/CharDetail'
+        image_data:
+          $ref: '#/components/schemas/ImageData'
+        metadata:
+          $ref: '#/components/schemas/ElementMetadata'
+
+    ElementMetadata:
+      type: object
+      properties:
+        parent_id:
+          type: string
+          description: Parent element ID
+        children_ids:
+          type: array
+          description: List of child element IDs
+          items:
+            type: string
+        category_depth:
+          type: integer
+          description: Nesting depth of elements of the same type, e.g., 0 for Title indicates level 1 heading, 1 indicates level 2 heading; 0 for ListItem indicates top-level list, 1 indicates nested list
+        ref_element_id:
+          type: string
+          description: Another element ID directly associated with the current element, such as the association between an image/table and its caption.
+        is_continuation:
+          type: boolean
+          description: Whether this is a cross-page or cross-column continuation block
+        continuation_of:
+          type: string
+          description: When is_continuation=true, points to the element ID of the previous continuation block. For example, when a table spans pages, the Table element on the second page points to the Table element on the first page through this field
+        has_inline_objects:
+          type: boolean
+          description: Whether it contains sub-objects, such as formulas in text, images in table cells, etc.
+        inline_object_types:
+          type: array
+          description: List of object types contained within this element
+          items:
+            type: string
+        width:
+          type: integer
+          description: Image width, for Image elements only
+        height:
+          type: integer
+          description: Image height, for Image elements only
+        interactivity:
+          type: boolean
+          description: Whether the GUI element is interactive
+        description:
+          type: string
+          description: Semantic description of the element
+        data_source:
+          $ref: '#/components/schemas/DataSource'
+
+    # ──────────────────────────────────────
+    # Object
+    # ──────────────────────────────────────
+    InlineObject:
+      type: object
+      required:
+        - object_id
+        - type
+        - text
+        - coordinates
+      properties:
+        object_id:
+          type: string
+        type:
+          type: string
+          description: Object type, such as formula, handwriting, checkbox, image
+        sub_type:
+          type: string
+        text:
+          type: string
+        text_range:
+          type: array
+          items:
+            type: integer
+          minItems: 2
+          maxItems: 2
+          description: Range of the object in the text [start, end), 0-based half-open interval
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        image_data:
+          $ref: '#/components/schemas/ImageData'
+        metadata:
+          type: object
+          properties:
+            display_mode:
+              type: string
+              enum: [inline, display]
+              description: Formula display mode, inline for in-line, display for block-level
+
+    # ──────────────────────────────────────
+    # Table Structure
+    # ──────────────────────────────────────
+    TableStructure:
+      type: object
+      description: Structured details of a table fragment, returned only when type=Table and include_table_structure=true
+      properties:
+        rows:
+          type: integer
+          description: Number of rows
+        cols:
+          type: integer
+          description: Number of columns
+        cells:
+          type: array
+          description: List of cells
+          items:
+            $ref: '#/components/schemas/Cell'
+
+    Cell:
+      type: object
+      required:
+        - cell_id
+        - row
+        - col
+        - row_span
+        - col_span
+        - content_type
+        - text
+        - coordinates
+      properties:
+        cell_id:
+          type: string
+        row:
+          type: integer
+          minimum: 1
+        col:
+          type: integer
+          minimum: 1
+        row_span:
+          type: integer
+        col_span:
+          type: integer
+        content_type:
+          type: string
+          enum: [text, formula, image, mixed]
+        text:
+          type: string
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        image_datas:
+          type: array
+          description: Array of images within the cell, supports multiple images. For more version differences, see [Schema Version Migration Guide](/xparse/schema-migration)
+          items:
+            $ref: '#/components/schemas/ImageData'
+        objects:
+          type: array
+          items:
+            $ref: '#/components/schemas/InlineObject'
+          description: Fine-grained objects embedded in the cell, returned only when content_type is text/mixed and include_inline_objects=true
+        char_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharDetail'
+
+    # ──────────────────────────────────────
+    # Char Details
+    # ──────────────────────────────────────
+    CharDetail:
+      type: object
+      description: Character detail information
+      properties:
+        index:
+          type: integer
+          description: Character index in the text
+        text:
+          type: string
+          description: Final recognized character
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        recognition:
+          $ref: '#/components/schemas/Recognition'
+        # style:
+        #   $ref: '#/components/schemas/CharStyle'
+
+    Recognition:
+      type: object
+      description: Recognition information, including confidence and candidate character list
+      properties:
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Final character confidence, range [0,1]
+        candidates:
+          type: array
+          description: List of candidate characters
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+                description: Candidate character
+              confidence:
+                type: number
+                description: Candidate character confidence
+
+    # CharStyle:
+    #   type: object
+    #   description: Style information (not yet implemented)
+    #   properties:
+    #     bold:
+    #       type: boolean
+    #     italic:
+    #       type: boolean
+    #     underline:
+    #       type: boolean
+    #     strikethrough:
+    #       type: boolean
+    #     emphasis_dot:
+    #       type: boolean
+    #     text_color:
+    #       type: string
+    #     background_color:
+    #       type: string
+
+    # ──────────────────────────────────────
+    # Image Data
+    # ──────────────────────────────────────
+    ImageData:
+      type: object
+      description: Image data, returned only when type=Image and include_image_data=true
+      properties:
+        image_url:
+          type: string
+          description: Image URL
+        mime_type:
+          type: string
+          description: Image MIME type
+        base64:
+          type: string
+          description: Image base64, optional
+
+    # ──────────────────────────────────────
+    # Title Tree
+    # ──────────────────────────────────────
+    TitleTreeNode:
+      type: object
+      description: Title node
+      properties:
+        element_id:
+          type: string
+          description: ID of the corresponding Title element
+        title:
+          type: string
+          description: Title text
+        level:
+          type: integer
+          minimum: 1
+          description: Title level, 1 is the highest
+        page_number:
+          type: integer
+          description: Page number where the title is located
+        children:
+          type: array
+          description: Nested child title nodes
+          items:
+            $ref: '#/components/schemas/TitleTreeNode'
+
+    # ──────────────────────────────────────
+    # Table Object (not yet implemented)
+    # ──────────────────────────────────────
+    # TableObject:
+    #   type: object
+    #   properties:
+    #     table_object_id:
+    #       type: string
+    #     table_element_ids:
+    #       type: array
+    #       items:
+    #         type: string
+    #     caption_element_ids:
+    #       type: array
+    #       items:
+    #         type: string
+    #     data:
+    #       type: object
+    #       properties:
+    #         caption:
+    #           type: string
+    #         summary_text:
+    #           type: string
+    #         html:
+    #           type: string
+    #         markdown:
+    #           type: string
+
+    # ──────────────────────────────────────
+    # Page
+    # ──────────────────────────────────────
+    Page:
+      type: object
+      description: Page information
+      properties:
+        page_number:
+          type: integer
+          description: Page number
+        page_width:
+          type: number
+          description: Page width
+        page_height:
+          type: number
+          description: Page height
+        page_image_url:
+          type: string
+          description: Page rendering image URL
+        element_ids:
+          type: array
+          description: List of element IDs contained on this page, in the order of default reading order on the page
+          items:
+            type: string
+        dpi:
+          type: integer
+          description: DPI used when converting the current page to an image
+        angle:
+          type: number
+          description: Page rotation angle. Defining 0 degrees as the orientation of the image for human reading of text, called upright image, this field represents the rotation angle obtained by clockwise rotation of the upright image.
+        status:
+          type: string
+          description: Page processing status
+
+
+    # ──────────────────────────────────────
+    # Summary
+    # ──────────────────────────────────────
+    Summary:
+      type: object
+      description: Processing summary
+      properties:
+        duration_ms:
+          type: number
+          description: Total processing time (milliseconds)
+
+    # ──────────────────────────────────────
+    # DataSource
+    # ──────────────────────────────────────
+    DataSource:
+      type: object
+      description: Detailed data source information
+      properties:
+        record_locator:
+          type: object
+          properties:
+            protocol:
+              type: string
+              description: Protocol type
+              example: "file"
+            remote_file_path:
+              type: string
+              description: Remote file path
+              example: "/projects/demo/example.pdf"
+        url:
+          type: string
+          description: Complete file URL
+          example: "file:///projects/demo/example.pdf"
+
+    # ──────────────────────────────────────
+    # Coordinates
+    # ──────────────────────────────────────
+    Coordinates:
+      type: array
+      items:
+        type: number
+      minItems: 8
+      maxItems: 8
+      description: Normalized quadrilateral coordinates [x1,y1,x2,y2,x3,y3,x4,y4], in the order of top-left, top-right, bottom-right, bottom-left. Coordinate values range [0,1], preserved to six significant digits.
+
+tags:
+  - name: XParse Parse
+    description: |
+      Standalone document parsing API interface
+
+      ## Features
+      - 📄 Multi-format Support: Supports PDF, images, and various other document formats
+      - 🔍 Multi-engine Support: Supports TextIn, GUI, and other parsing engines
+      - 📊 Structured Output: Converts documents into standardized element structures
+      - 🎯 Semantic Preservation: Preserves the semantic structure of documents, such as titles, paragraphs, tables, etc.
+
+      ## Billing Information
+      - Billed based on the number of pages processed
+      - Billing information is associated through x-ti-app-id and x-ti-secret-code

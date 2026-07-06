@@ -1,0 +1,87 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "TextIn Intelligent Document Parsing",
+  "colors": {
+    "primary": "#1a66ff",
+    "light": "#1a66ff",
+    "dark": "#1a66ff"
+  },
+  "favicon": "/favicon.png",
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guide",
+        "groups": [
+          {
+            "group": "Document Parsing",
+            "pages": [
+              "xparse/v1/quickstart",
+              "xparse/v1/parse-config",
+              "xparse/v1/parse-response"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API",
+        "groups": [
+          {
+            "group": "Document Parsing API",
+            "pages": [
+              "api-reference/endpoint/xparse/v1/parse-sync",
+              "api-reference/endpoint/xparse/v1/parse-async",
+              "api-reference/endpoint/xparse/v1/parse-async-status"
+            ]
+          }
+        ]
+      }
+    ],
+    "anchors": []
+  },
+  "logo": {
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "icon": "github",
+        "href": "https://github.com/intsig-textin"
+      },
+      {
+        "label": "News",
+        "href": "https://www.textin.com/news/list"
+      },
+      {
+        "label": "Support",
+        "href": "https://www.textin.com/document/list"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Try It Now",
+      "href": "https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/intsig-textin"
+    }
+  },
+  "api": {
+    "playground": {
+      "proxy": false,
+      "display": "simple"
+    }
+  }
+}

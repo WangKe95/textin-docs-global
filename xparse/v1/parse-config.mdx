@@ -1,0 +1,731 @@
+---
+title: "Parse Configuration Guide"
+description: "Comprehensive documentation of input parameter configurations for the document parsing API, including capability switches, processing scope, and advanced engine settings."
+---
+
+The document parsing API supports customization of parsing behavior through the `config` parameter. This guide details all available configuration options.
+
+## Configuration Structure Overview
+
+```json
+{
+  "document": {
+    "password": "example-pdf-password"
+  },
+  "capabilities": {
+    "include_hierarchy": true,
+    "include_inline_objects": false,
+    "include_char_details": false,
+    "include_image_data": false,
+    "include_table_structure": false,
+    "pages": false,
+    "title_tree": false,
+    "table_view": "html",
+    "remove_watermark": false,
+    "crop_dewarp": false
+  },
+  "scope": {
+    "page_range": "1-5"
+  },
+  "config": {
+    "force_engine": "textin",
+    "engine_params": {
+      "parse_mode": "vlm",
+      "formula_level": 0,
+      "image_output_type": "url",
+      "recognize_chemical": true
+    }
+  }
+}
+```
+
+---
+
+{/* ## schema_version
+
+  Specifies the version number for the returned data structure.
+
+  | Field | Type | Default | Description |
+  |------|------|--------|------|
+  | `schema_version` | string | `"1.3.0"` | Target schema version, currently supports `"1.3.0"` |
+
+  <Info>
+  We recommend explicitly specifying `schema_version` to ensure stability of the returned data structure.
+  </Info> */}
+
+## document (Document Configuration)
+
+Configuration parameters for document processing.
+
+```json
+{
+  "document": {
+    "password": "example-pdf-password"
+  }
+}
+```
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `password` | string | No | Password for encrypted documents (e.g., encrypted PDF files) |
+
+**Use Cases**:
+
+- Processing password-protected PDF documents
+- Ensuring encrypted documents can be parsed correctly
+
+---
+
+## capabilities (Parsing Strategy & Format Configuration)
+
+Controls the level of detail and format of returned data. Enabling more capabilities will increase parsing time and response size.
+
+### include\_hierarchy
+
+Whether to return hierarchical and relational fields between elements.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `include_hierarchy` | boolean | `true` | When enabled, returns parent-child relationships and reference relationships between elements |
+
+**Fields returned when enabled**:
+
+- `parent_id`: Parent element ID
+- `children_ids`: List of child element IDs
+- `ref_element_id`: Related element ID (e.g., association between images/tables and their captions)
+
+**Use Cases**:
+
+- Building structured relationship graphs of documents
+- Understanding hierarchical relationships between elements
+- Tracking hierarchical relationships between headings and content
+
+```json
+{
+  "capabilities": {
+    "include_hierarchy": true
+  }
+}
+```
+
+### include\_inline\_objects
+
+Whether to return fine-grained inline objects.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `include_inline_objects` | boolean | `false` | When enabled, text elements will return fine-grained objects they contain |
+
+**Supported inline object types**:
+
+- `formula`: Mathematical formulas (LaTeX format)
+- `handwriting`: Handwritten content
+- `checkbox`: Checkboxes
+- `image`: Embedded images
+
+**Use Cases**:
+
+- Precise location and extraction of formulas
+- Recognition of handwritten signatures or annotations
+- Processing checkboxes in forms
+- Extracting embedded images from text paragraphs
+
+```json
+{
+  "capabilities": {
+    "include_inline_objects": true
+  }
+}
+```
+
+**Response Example**:
+
+```json
+{
+  "element_id": "el_004",
+  "type": "NarrativeText",
+  "text": "Let the penalty function be $f(x)=x^2+1$.",
+  "objects": [
+    {
+      "object_id": "obj_001",
+      "type": "formula",
+      "text": "$f(x)=x^2+1$",
+      "text_range": [7, 20],
+      "coordinates": [0.220000, 0.480000, 0.300000, 0.480000, 0.300000, 0.540000, 0.220000, 0.540000],
+      "metadata": {
+        "display_mode": "inline"
+      }
+    }
+  ]
+}
+```
+
+### include\_char\_details
+
+Whether to return character-level detailed information.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `include_char_details` | boolean | `false` | When enabled, returns detailed information for each character in the text |
+
+**Character information includes**:
+
+- Character coordinates
+- Recognition confidence
+- Candidate character list
+
+**Use Cases**:
+
+- Character-level precise positioning
+- Assessing recognition quality
+- Handling low-confidence characters
+- Implementing character-level error correction
+
+```json
+{
+  "capabilities": {
+    "include_char_details": true
+  }
+}
+```
+
+**Response Example**:
+
+```json
+{
+  "char_details": [
+    {
+      "index": 0,
+      "text": "O",
+      "coordinates": [0.100000, 0.120000, 0.140000, 0.120000, 0.140000, 0.160000, 0.100000, 0.160000],
+      "recognition": {
+        "confidence": 0.999,
+        "candidates": [
+          {"text": "O", "confidence": 0.999},
+          {"text": "0", "confidence": 0.001}
+        ]
+      }
+    }
+  ]
+}
+```
+
+### include\_image\_data
+
+Whether to return image data.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `include_image_data` | boolean | `false` | When enabled, image elements will return complete image data |
+
+**Image information includes**:
+
+- Image URL
+- MIME type
+- Base64 encoding (optional)
+
+**Use Cases**:
+
+- Downloading or displaying images from documents
+- Secondary processing of images
+- Obtaining Base64 encoding of images for embedding
+
+```json
+{
+  "capabilities": {
+    "include_image_data": true
+  }
+}
+```
+
+**Response Example**:
+
+```json
+{
+  "element_id": "el_020",
+  "type": "Image",
+  "image_data": {
+    "image_url": "https://example.com/images/xxx.png",
+    "mime_type": "image/png",
+    "base64": "iVBORw0KGgoAAAANSUhEUg..."
+  }
+}
+```
+
+### include\_table\_structure
+
+Whether to return detailed structured table information.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `include_table_structure` | boolean | `false` | When enabled, returns table rows, columns, and detailed information for each cell in JSON format |
+
+**Table structure includes**:
+
+- Number of rows and columns
+- Position of each cell (row, column)
+- Cell span information (rowspan, colspan)
+- Cell content type (text, formula, image, mixed)
+- Cell coordinates
+
+**Use Cases**:
+
+- Programmatic processing of table data
+- Extracting precise positions of table cells
+- Handling complex tables (merged cells)
+- Recognizing formulas or images in table cells
+
+```json
+{
+  "capabilities": {
+    "include_table_structure": true
+  }
+}
+```
+
+**Response Example**:
+
+```json
+{
+  "element_id": "el_010",
+  "type": "Table",
+  "table_structure": {
+    "rows": 2,
+    "cols": 2,
+    "cells": [
+      {
+        "cell_id": "tbl_001_r1_c1",
+        "row": 1,
+        "col": 1,
+        "row_span": 1,
+        "col_span": 1,
+        "content_type": "text",
+        "text": "Name",
+        "coordinates": [0.100000, 0.300000, 0.300000, 0.300000, 0.300000, 0.340000, 0.100000, 0.340000]
+      }
+    ]
+  }
+}
+```
+
+### pages
+
+Whether to return page metadata list.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `pages` | boolean | `false` | When enabled, returns detailed information for each page |
+
+**Page information includes**:
+
+- Page number
+- Page width and height
+- Rotation angle
+- Rendered image URL (`page_image_url`)
+- List of contained elements (`element_ids`)
+- DPI
+- Processing status
+
+**Use Cases**:
+
+- Organizing document content by page
+- Obtaining page preview images
+- Understanding physical properties of pages (width, height, DPI)
+- Locating the page where an element resides
+
+```json
+{
+  "capabilities": {
+    "pages": true
+  }
+}
+```
+
+**Response Example**:
+
+```json
+{
+  "pages": [
+    {
+      "page_number": 1,
+      "page_width": 1576,
+      "page_height": 1683,
+      "page_image_url": "https://example.com/page-1.jpg",
+      "element_ids": ["el_001", "el_002", "el_003"],
+      "dpi": 144,
+      "angle": 0,
+      "status": "Success"
+    }
+  ]
+}
+```
+
+### title\_tree
+
+Whether to return the title tree (table of contents).
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `title_tree` | boolean | `false` | When enabled, returns the hierarchical outline structure of the document |
+
+**Table of contents information includes**:
+
+- Title text
+- Title level (1 is the highest level)
+- Page number
+- Nested sub-titles
+
+**Use Cases**:
+
+- Generating document navigation
+- Organizing content by chapters
+- Understanding document outline structure
+
+```json
+{
+  "capabilities": {
+    "title_tree": true
+  }
+}
+```
+
+**Response Example**:
+
+```json
+{
+  "title_tree": [
+    {
+      "element_id": "el_001",
+      "title": "Chapter 1 Overview",
+      "level": 1,
+      "page_number": 1,
+      "children": [
+        {
+          "element_id": "el_005",
+          "title": "1.1 Background",
+          "level": 2,
+          "page_number": 1,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+### table\_view
+
+Table rendering format in Markdown.
+
+| Field | Type | Default | Options | Description |
+| --- | --- | --- | --- | --- |
+| `table_view` | string | `"html"` | `markdown`, `html` | Controls table rendering format in the Markdown field |
+
+**Format Comparison**:
+
+**Markdown Format** (`table_view: "markdown"`):
+
+```markdown
+| Name | Age |
+|---|---|
+| John | 28 |
+```
+
+**HTML Format** (`table_view: "html"`):
+
+```html
+<table>
+  <thead>
+    <tr><th>Name</th><th>Age</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>John</td><td>28</td></tr>
+  </tbody>
+</table>
+```
+
+**Use Cases**:
+
+- Use Markdown format for simple tables
+- Use HTML format for complex table structures (merged cells)
+
+### **remove\_watermark** (**Watermark Removal**)
+
+Whether to apply watermark removal preprocessing.
+
+| Field | Type | Default | Description |
+| :-- | :-- | :-- | :-- |
+| `remove_watermark` | boolean | `false` | When enabled, automatically detects and removes watermarks from documents |
+
+**Use Cases**:
+
+- Removing watermark interference to improve recognition accuracy
+- Obtaining clean parsing results without watermarks
+
+```json
+{
+  "capabilities": {
+    "remove_watermark": true
+  }
+}
+```
+
+### **crop\_dewarp (Edge Cropping & Dewarping)**
+
+Whether to apply edge cropping and dewarping preprocessing.
+
+| Field | Type | Default | Description |
+| :-- | :-- | :-- | :-- |
+| `crop_dewarp` | boolean | `false` | When enabled, automatically detects and applies edge cropping and dewarping preprocessing |
+
+**Use Cases**:
+
+- Scanned documents with excessive borders or page skew
+- Photographed documents with perspective distortion (e.g., curved book pages)
+- Obtaining upright, compact page images to improve layout analysis quality
+
+```json
+{
+  "capabilities": {
+    "crop_dewarp": true
+  }
+}
+```
+
+---
+
+## scope (Processing Range Control)
+
+Controls the page range for parsing to reduce unnecessary processing.
+
+```json
+{
+  "scope": {
+    "page_range": "1-5,10-15"
+  }
+}
+```
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `page_range` | string | No | Page range, starting from 1, supports multiple closed intervals |
+
+**Format Description**:
+
+- Single page: `"1"`
+- Continuous pages: `"1-5"`
+- Multiple intervals: `"1-2,3-4,5-10"`
+
+<Tip>
+  **Single File Page Limit Information**
+
+  When the file page count exceeds the request limit, the API will return an error. Please refer to the following limits and solutions:
+
+  | User Type | Sync API Limit | Async API Limit | Available Solutions |
+  | --- | --- | --- | --- |
+  | Free Users | ≤100 pages | ≤100 pages | ① Use `page_range` parameter for segmented processing<br />② Upgrade to paid user<br />③ Use [Async API](/api-reference/endpoint/xparse/v1/parse-async) instead |
+  | Paid Users | ≤500 pages | ≤2000 pages | ① Use `page_range` parameter for segmented processing<br />② For files exceeding 500 pages, consider using [Async API](/api-reference/endpoint/xparse/v1/parse-async) |
+  | Enterprise Customers | ≤500 pages | ≤5000 pages | ① Use `page_range` parameter for segmented processing<br />② For files exceeding 500 pages, consider using [Async API](/api-reference/endpoint/xparse/v1/parse-async) |
+</Tip>
+
+**Use Cases**:
+
+- Processing only specific pages of a document
+- Reducing processing time and costs
+- Batch processing of large documents
+
+---
+
+## config (Advanced Configuration)
+
+Expert mode configuration for forcing specific parsing engines and engine parameters.
+
+<Warning>
+  **Use with Caution**: These configurations are for advanced users only. Improper configuration may result in degraded parsing quality or failure.
+</Warning>
+
+### force\_engine
+
+Force a specific internal parsing engine.
+
+| Field | Type | Options | Description |
+| --- | --- | --- | --- |
+| `force_engine` | string | `textin`, `textin_gui` | Force the use of a specific parsing engine |
+
+**Engine Description**:
+
+- `textin`: TextIn proprietary engine, default option, best overall performance
+- `textin_gui`: GUI recognition engine for desktop/mobile/web application interface screenshot recognition
+
+<Note>
+  `textin_gui` only supports image formats (JPEG, PNG, GIF, WebP), file size not exceeding 10MB, and has different response structure. See [GUI Recognition Engine Special Notes](/xparse/v1/parse-response#gui-recognition-engine-special-notes)
+</Note>
+
+**Use Cases**:
+
+- Comparing effects of different engines
+- Using specific engines for particular scenarios
+- Debugging and testing
+
+```json
+{
+  "config": {
+    "force_engine": "textin"
+  }
+}
+```
+
+### engine\_params
+
+Engine-level custom parameters. Different engines support different parameters.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `engine_params` | object | Custom parameters passed to the parsing engine |
+
+**Common Parameter Examples**:
+
+```json
+{
+  "config": {
+    "force_engine": "textin",
+    "engine_params": {
+      "parse_mode": "parse",
+      "formula_level": 0,
+      "image_output_type": "url",
+      "recognize_chemical": true
+    }
+  }
+}
+```
+
+| Parameter | Type | Options | Description |
+| --- | --- | --- | --- |
+| `parse_mode` | string | `auto`, `scan`, `parse`, `lite`, `vlm` | PDF parsing mode.<br />• `auto`: Engine automatically selects, widest applicability<br />• `scan`: Parse all as images<br />• `parse`: Digital text parsing only, fastest<br />• `lite`: Lightweight version, outputs only tables and text results<br />• `vlm`: Vision-Language Model parsing mode |
+| `formula_level` | int | `0`, `1` | Formula recognition level, 0 for standard, 1 for enhanced |
+| `image_output_type` | string | `url`, `base64` | Image output type, `url` or `base64` |
+| `recognize_chemical` | boolean | `true`, `false` | Retrieve chemical molecular formulas in documents, only effective in `vlm` mode, results viewable in element text field when enabled |
+
+<Note>
+  Different engines may support different parameters. Contact technical support for specific parameters.
+</Note>
+
+---
+
+## Complete Configuration Examples
+
+### Basic Configuration (Recommended)
+
+Default configuration suitable for most scenarios:
+
+```json
+{
+  "capabilities": {
+    "include_hierarchy": true,
+    "title_tree": true,
+    "include_table_structure": true
+  }
+}
+```
+
+### Maximum Detail
+
+Returns all available detailed information (increases processing time and data volume):
+
+```json
+{
+  "capabilities": {
+    "include_hierarchy": true,
+    "include_inline_objects": true,
+    "include_char_details": true,
+    "include_image_data": true,
+    "include_table_structure": true,
+    "pages": true,
+    "title_tree": true,
+    "table_view": "html"
+  }
+}
+```
+
+### Minimal Configuration
+
+Returns only basic elements and Markdown:
+
+```json
+{
+  "capabilities": {
+    "include_hierarchy": false
+  }
+}
+```
+
+### Processing Encrypted PDF
+
+```json
+{
+  "document": {
+    "password": "your-pdf-password"
+  },
+  "capabilities": {
+    "include_hierarchy": true,
+    "title_tree": true
+  }
+}
+```
+
+### Process Only First 10 Pages
+
+```json
+{
+  "scope": {
+    "page_range": "1-10"
+  },
+  "capabilities": {
+    "include_hierarchy": true
+  }
+}
+```
+
+---
+
+## Performance Optimization Recommendations
+
+<AccordionGroup>
+  <Accordion title="Enable Capabilities as Needed" icon="toggle-on">
+    Only enable necessary capability switches to avoid returning unnecessary data. For example, if character-level details are not needed, don't enable `include_char_details`.
+  </Accordion>
+
+  <Accordion title="Use page_range Appropriately" icon="file">
+    For large documents, process a portion of pages first for testing, then process all pages after confirming results.
+  </Accordion>
+
+  <Accordion title="Async Processing for Large Files" icon="clock">
+    For documents exceeding 50 pages, use the async API to avoid HTTP timeouts.
+  </Accordion>
+
+  <Accordion title="Cache Processing Results" icon="database">
+    Repeated processing of the same document generates the same `file_id`, allowing result caching via `file_id`.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Related Links
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/xparse/v1/quickstart">
+    Complete your first document parsing in 5 minutes
+  </Card>
+
+  <Card title="Response Structure Guide" icon="code" href="/xparse/v1/parse-response">
+    Learn about the complete response data structure
+  </Card>
+
+  <Card title="API Reference" icon="book" href="/api-reference/endpoint/xparse/v1/parse-sync">
+    Complete API parameter and response schema
+  </Card>
+
+  <Card title="Async Parsing" icon="clock" href="/api-reference/endpoint/xparse/v1/parse-async">
+    Use async API for large file processing
+  </Card>
+</CardGroup>
