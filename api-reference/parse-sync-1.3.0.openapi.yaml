@@ -303,12 +303,12 @@ components:
       type: apiKey
       in: header
       name: x-ti-app-id
-      description: 'Please [log in to Textin](https://www.textin.com/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-app-id'
+      description: 'Please [log in to Textin](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-app-id'
     SecretCodeAuth:
       type: apiKey
       in: header
       name: x-ti-secret-code
-      description: 'Please [log in to Textin](https://www.textin.com/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-secret-code'
+      description: 'Please [log in to Textin](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-secret-code'
 
   schemas:
     # ──────────────────────────────────────

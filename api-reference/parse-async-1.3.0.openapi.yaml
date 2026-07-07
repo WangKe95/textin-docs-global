@@ -184,12 +184,12 @@ components:
       type: apiKey
       in: header
       name: x-ti-app-id
-      description: 'Please [login to Textin](https://www.textin.com/console/dashboard/setting) and navigate to "Dashboard - Account Settings - Developer Info" to view x-ti-app-id'
+      description: 'Please [login to Textin](https://www.textin.ai/console/dashboard/setting) and navigate to "Dashboard - Account Settings - Developer Info" to view x-ti-app-id'
     SecretCodeAuth:
       type: apiKey
       in: header
       name: x-ti-secret-code
-      description: 'Please [login to Textin](https://www.textin.com/console/dashboard/setting) and navigate to "Dashboard - Account Settings - Developer Info" to view x-ti-secret-code'
+      description: 'Please [login to Textin](https://www.textin.ai/console/dashboard/setting) and navigate to "Dashboard - Account Settings - Developer Info" to view x-ti-secret-code'
 
   schemas:
     # ──────────────────────────────────────

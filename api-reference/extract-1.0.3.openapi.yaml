@@ -20,7 +20,7 @@ paths:
       summary: general information extration
       operationId: llm_uie_v3
       description: |
-        智能抽取API已更新至v3， 如需查看旧版API请[点击](https://www.textin.com/document/legacy/open_kie_vlm_engine)
+        智能抽取API已更新至v3， 如需查看旧版API请[点击](https://www.textin.ai/document/legacy/open_kie_vlm_engine)
 
         快速调试：请参考[Postman调试教程](/xparse/extract-debug-postman)或[Apifox调试教程](/xparse/extract-debug-apifox)
       requestBody:
@@ -88,12 +88,12 @@ components:
       type: apiKey
       in: header
       name: x-ti-app-id
-      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+      description: '请[登录Textin](https://www.textin.ai/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
     SecretCodeAuth:
       type: apiKey
       in: header
       name: x-ti-secret-code
-      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+      description: '请[登录Textin](https://www.textin.ai/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
   schemas:
     SchemaDefinition:
       type: object
