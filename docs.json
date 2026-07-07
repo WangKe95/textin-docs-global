@@ -66,9 +66,8 @@
             ]
           },
           {
-            "group": "Document Processing API",
+            "group": "Document Extraction API",
             "pages": [
-              "api-reference/endpoint/parse",
               "api-reference/endpoint/extract-v3"
             ]
           }
@@ -89,17 +88,17 @@
       },
       {
         "label": "News",
-        "href": "https://www.textin.com/news/list"
+        "href": "https://www.textin.ai/news/list"
       },
       {
         "label": "Support",
-        "href": "https://www.textin.com/document/list"
+        "href": "https://www.textin.ai/document/list"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Try It Now",
-      "href": "https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown"
+      "href": "https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown"
     }
   },
   "footer": {

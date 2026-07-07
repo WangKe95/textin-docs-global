@@ -1,0 +1,524 @@
+openapi: 3.0.1
+info:
+  title: 智能文档识别（抽取）-API文档
+  description: 智能文档识别（抽取）-API文档
+  version: 1.0.3
+
+servers:
+  # - url: https://textin-sandbox.intsig.com
+  #   description: Sandbox server
+  - url: https://api.textin.com
+    description: Production server
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /ai/service/v3/entity_extraction:
+    post:
+      summary: general information extration
+      operationId: llm_uie_v3
+      description: |
+        智能抽取API已更新至v3， 如需查看旧版API请[点击](https://www.textin.com/document/legacy/open_kie_vlm_engine)
+
+        快速调试：请参考[Postman调试教程](/xparse/extract-debug-postman)或[Apifox调试教程](/xparse/extract-debug-apifox)
+      requestBody:
+        description: |
+          支持的文件格式：png, jpg, jpeg, pdf, bmp, tiff, webp, doc, docx, html, mhtml, xls, xlsx, csv, ppt, pptx, txt, ofd；
+
+          支持schema模式的结构化信息抽取，通过定义字段结构进行精确抽取。
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - file
+                - schema
+              properties:
+                file:
+                  type: object
+                  description: 文件信息
+                  properties:
+                    file_base64:
+                      type: string
+                      description: |
+                        待处理文件的base64编码，与file_url二选一
+                      example: "/9j/4AAQSk..."
+                    file_url:
+                      type: string
+                      description: |
+                        待处理文件的url链接，与file_base64二选一，如果存在file_base64则会被忽略
+                      example: "https://example.com/document.pdf"
+                    file_name:
+                      type: string
+                      description: |
+                        用于前端展示的文件名，可选
+                      example: "document.pdf"
+                schema:
+                  type: object
+                  description: |
+                    抽取数据结构，参考[JSON schema说明](/xparse/extract-quickstart-v3#json-schema-结构说明和抽取指南)
+                  example:
+                    {
+                      type: "object",
+                      properties:
+                        { "商品": { type: "string", description: "商品名称" } },
+                      required: ["商品"],
+                    }
+                parse_options:
+                  $ref: "#/components/schemas/ParseOptions"
+                extract_options:
+                  $ref: "#/components/schemas/ExtractOptions"
+
+      responses:
+        "200":
+          description: 返回结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - $ref: "#/components/schemas/ExtractionResult"
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+  schemas:
+    SchemaDefinition:
+      type: object
+      description: 抽取数据结构定义
+      required:
+        - type
+        - properties
+      properties:
+        properties:
+          type: object
+          description: 单个字段描述
+          properties:
+            name:
+              type: string
+              description: 字段名
+              example: "商品名称"
+            type:
+              type: string
+              description: 字段类型
+              enum:
+                - string
+                - number
+                - integer
+                - array
+                - object
+                - enum
+              example: "string"
+            description:
+              type: string
+              description: 字段提示词
+              example: "提取商品的名称信息"
+          required: ["name", "type"]
+        type:
+          type: string
+          description: 字段类型
+          example: "object"
+        required:
+          type: array
+          description: 用于固定当前层 properties 的 key 顺序
+          items:
+            type: string
+          example: ["商品名称", "价格"]
+    ParseOptions:
+      type: object
+      description: 解析阶段参数
+      additionalProperties: false
+      properties:
+        page_start:
+          type: integer
+          description: 从第几页开始抽取，默认为1
+          default: 1
+          example: 1
+        page_count:
+          type: integer
+          description: 要进行抽取的pdf页数，默认为100页
+          default: 100
+          example: 10
+        get_image:
+          type: string
+          description: 获取图片，默认为objects
+          enum:
+            - none
+            - both
+            - page
+            - objects
+          default: objects
+          example: "objects"
+        crop_dewarp:
+          type: integer
+          description: 是否进行切边矫正处理
+          enum: [0, 1]
+          default: 0
+          example: 0
+        remove_watermark:
+          type: integer
+          description: 是否进行去水印处理
+          enum: [0, 1]
+          default: 0
+          example: 0
+        parse_mode:
+          type: string
+          description: |
+            文档的解析模式，默认为scan模式。
+            - auto 由引擎自动选择，适用范围最广
+            - scan 文档统一当成图片解析（如pdf每一页都当成图片解析）
+            - lite 轻量版，只输出表格和文字结果
+            - parse 仅电子档文字解析，速度最快
+            - vlm 视觉语言模型解析模式
+          enum: [auto, scan, lite, parse, vlm]
+          default: "scan"
+          example: "scan"
+        formula_level:
+          type: integer
+          description: 公式识别等级
+          enum: [0, 1, 2]
+          default: 0
+          example: 0
+        table_flavor:
+          type: string
+          default: html
+          enum: [md, html, none]
+        pdf_pwd:
+          type: string
+          description: |
+            当pdf为加密文档时，需要提供密码。 
+            备注：对前端封装该接口时，需要自行对密码进行安全防护
+
+    ExtractOptions:
+      type: object
+      description: 高级抽取控制
+      additionalProperties: false
+      properties:
+        generate_citations:
+          type: boolean
+          description: 是否生成引用信息
+          default: false
+          example: true
+        stamp:
+          type: boolean
+          description: 是否调用印章识别
+          default: false
+          example: true
+
+    BaseResponse:
+      type: object
+      required:
+        - code
+        - message
+        - version
+      properties:
+        code:
+          type: integer
+          description: |
+            状态码
+            - 200: Success (成功)
+            - 40101: x-ti-app-id 或 x-ti-secret-code 为空
+            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败
+            - 40103: 客户端IP不在白名单
+            - 40003: 余额不足，请充值后再使用
+            - 40004: Parameter error (参数错误，请检查入参）
+            - 40007: 机器人不存在或未发布
+            - 40008: 机器人未开通，请至市场开通后重试
+            - 40302: 上传文件大小不符，文件大小不超过 50M
+            - 40303: 文件类型不支持，接口会返回实际检测到的文件类型，如“当前文件类型为.gif”
+            - 40304: 图片尺寸不符，长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内
+            - 40305: File not uploaded (识别文件未上传）
+            - 40306: qps超过限制
+            - 40400: 无效的请求链接，请检查链接是否正确
+            - 40422: The file is corrupted (文件损坏)
+            - 40423: Password required or incorrect password (PDF密码错误)
+            - 40424: Page number out of range (页面设置超出文件范围）
+            - 40425: The input file format is not supported (输入文件格式不支持）
+            - 40428: Process office file failed (word和ppt转pdf失败或者超时)
+            - 500: Engine failed (服务器内部错误）
+            - 50011: LLM Connection Failed （访问大模型超时）
+            - 50012: LLM Engine Failed (大模型引擎错误）     
+            - 50207: Partial failed (部分页面解析失败)
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40103
+            - 40003
+            - 40004
+            - 40007
+            - 40008
+            - 40302
+            - 40303
+            - 40304
+            - 40305
+            - 40306
+            - 40400
+            - 40422
+            - 40423
+            - 40424
+            - 40425
+            - 40428
+            - 500
+            - 50011
+            - 50012
+            - 50207
+          example: 200
+        message:
+          type: string
+          description: |
+            成功或错误信息
+          example: "Success"
+        version:
+          type: string
+          description: 版本号
+          example: "v3.0.29_20250819"
+        duration:
+          type: integer
+          description: 总耗时(ms)
+          example: 8267
+        x_request_id:
+          type: string
+          description: 请求ID
+          example: "7596b8c9d2ddbc9924b66651e9efc174"
+        status:
+          type: string
+          description: 处理状态
+          example: "finished"
+
+    ExtractionResult:
+      type: object
+      properties:
+        result:
+          type: object
+          properties:
+            success_count:
+              type: integer
+              description: 成功处理的页数
+              example: 1
+            extracted_schema:
+              type: object
+              description: |
+                结构化抽取结果，根据用户定义的schema进行抽取的简化键值对结构
+
+                由于使用结构化抽取，具体的字段名称和数据类型由用户的schema决定，无法预先确定
+              additionalProperties: true
+              example:
+                商品: "童装 Looney Tunes UT（短袖T恤）女装SUPIMA COTTON圆领T恤（短袖）"
+            citations:
+              type: object
+              description: |
+                带坐标信息的抽取结果，包含详细的位置信息和边界框数据，用于高级处理场景
+
+                由于使用结构化抽取，具体的字段名称无法预先确定，但每个字段值都遵循统一的结构格式，包含抽取值、页码信息和详细的坐标数据
+              additionalProperties:
+                type: object
+                allOf:
+                  - $ref: "#/components/schemas/CitationItem"
+              example:
+                商品:
+                  value: "童装 Looney Tunes UT（短袖T恤）女装SUPIMA COTTON圆领T恤（短袖）"
+                  bounding_regions:
+                    - page_number: 1
+                      position: [137, 599, 1129, 599, 1129, 625, 182, 625]
+                      text: "童装 Looney Tunes UT（短袖T恤）女装SUPIMA COTTON圆领T恤（短袖）"
+            pages:
+              type: array
+              description: 文档每页的处理信息
+              items:
+                $ref: "#/components/schemas/PageInfo"
+            stamps:
+              type: array
+              description: 印章识别结果
+              items:
+                $ref: "#/components/schemas/StampInfo"
+        part_durations:
+          type: object
+          description: 各阶段耗时统计
+          properties:
+            parse_duration:
+              type: integer
+              description: 解析耗时(ms)
+              example: 1080
+            retrieve_duration:
+              type: integer
+              description: 检索耗时(ms)
+              example: 0
+            prompt_duration:
+              type: integer
+              description: 提示词处理耗时(ms)
+              example: 1
+            llm_duration:
+              type: integer
+              description: 大模型推理耗时(ms)
+              example: 7114
+            format_duration:
+              type: integer
+              description: 格式化耗时(ms)
+              example: 51
+
+    CitationItem:
+      type: object
+      required:
+        - value
+        - bounding_regions
+      properties:
+        value:
+          description: 字段的抽取值
+          type: string
+          nullable: true
+          example: "童装 Looney Tunes UT（短袖T恤）"
+        bounding_regions:
+          type: array
+          description: 字段的边界框信息
+          items:
+            $ref: "#/components/schemas/BoundingRegion"
+
+    BoundingRegion:
+      type: object
+      required:
+        - page_number
+        - position
+        - text
+      properties:
+        page_number:
+          type: integer
+          description: 所在页码
+          example: 1
+        position:
+          type: array
+          description: |
+            归一化坐标位置，长度为8的数组，表示四个顶点的坐标
+            [左上x, 左上y, 右上x, 右上y, 右下x, 右下y, 左下x, 左下y]
+          items:
+            type: number
+            minimum: 0
+            maximum: 1
+          minItems: 8
+          maxItems: 8
+          example: [137, 599, 1129, 599, 1129, 625, 182, 625]
+        text:
+          type: string
+          description: 该边界框内的文本内容
+          example: "童装 Looney Tunes UT（短袖T恤）"
+
+    PageInfo:
+      type: object
+      required:
+        - page_number
+        - status
+        - durations
+      properties:
+        page_number:
+          type: integer
+          description: 页码
+          example: 1
+        image_id:
+          type: string
+          description: 页面图片ID，用于下载图片
+          example: "62bfe3c3a8e9c9cf.jpg"
+        height:
+          type: integer
+          description: 页面高度
+          example: 1824
+        width:
+          type: integer
+          description: 页面宽度
+          example: 600
+        angle:
+          type: integer
+          description: 页面角度
+          enum: [0, 90, 180, 270]
+          example: 0
+        status:
+          type: string
+          description: 页面处理状态
+          example: "Success"
+        durations:
+          type: number
+          description: 页面处理耗时(ms)
+          example: 930.178466796875
+
+    StampInfo:
+      type: object
+      properties:
+        color:
+          type: string
+          description: |
+            当前印章颜色
+            - 红色
+            - 蓝色
+            - 黑色
+            - 其他
+          enum:
+            - 红色
+            - 蓝色
+            - 黑色
+            - 其他
+          example: "红色"
+        position:
+          type: array
+          description: 印章的坐标信息
+          items:
+            type: number
+            minimum: 0
+            maximum: 1
+          minItems: 8
+          maxItems: 8
+          example: [1223, 995, 1642, 1007, 1630, 1689, 1621, 1677]
+        stamp_shape:
+          type: string
+          description: |
+            当前印章形状
+            - 圆章
+            - 椭圆章
+            - 方章
+            - 三角章
+            - 菱形章
+            - 其他
+          enum:
+            - 圆章
+            - 椭圆章
+            - 方章
+            - 三角章
+            - 菱形章
+            - 其他
+          example: "圆章"
+        type:
+          type: string
+          description: |
+            当前印章类型
+            - 公章
+            - 个人章
+            - 专用章
+            - 其他
+            - 合同专用章
+            - 财务专用章
+            - 发票专用章
+            - 业务专用章
+          enum:
+            - 公章
+            - 个人章
+            - 专用章
+            - 其他
+            - 合同专用章
+            - 财务专用章
+            - 发票专用章
+            - 业务专用章
+          example: "公章"
+        value:
+          type: string
+          description: 印章的文本内容
+          example: "电力公司专用章"
