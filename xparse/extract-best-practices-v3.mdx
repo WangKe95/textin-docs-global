@@ -1,0 +1,67 @@
+---
+title: "Best Practices"
+description: "Recommendations for creating high-quality JSON schemas"
+---
+
+## Overview
+
+Well-constructed schemas ensure extraction results better meet expectations and facilitate downstream usage. Best practices shared in this guide include:
+
+- Defining clear fields
+- Using enumerations and descriptions
+- Avoiding unnecessary nesting
+- Focusing on key information in source documents to guide the extraction engine in accurately understanding extraction intent and interpreting documents
+
+By applying these practices, you can reduce extraction errors, improve output information completeness, and facilitate easier downstream integration.
+
+## JSON Schema Recommendations
+
+Your extraction schema plays a crucial role in output quality. Experiment with schema structure, descriptions, and type constraints to achieve optimal extraction results.
+
+**1. Use field names that closely match source document content and provide clear descriptions for each field.**
+
+Using field names and descriptions consistent with how information appears in source documents helps the extraction engine more easily identify and extract correct values. For example, when extracting data from tables, you can directly use table headers as field names.
+
+**2. Use enumeration type constraints for data that is a limited set of values.**
+
+If a field has a predictable set of values (e.g., "Yes/No" or predefined categories), use enum type to constrain output and improve consistency.
+
+```json
+"properties": {
+      "currency": {
+         "type": ["enum", "null"],
+          "enum": [
+            "USD",
+            "EUR",
+            "JPY",
+            "CAD",
+            "AUD",
+            "Other"
+          ],
+          "description": "International currency code"
+      }
+  }
+```
+
+**3. Avoid creating new data in the schema; leave data processing to downstream systems.**
+
+```python
+# Extract monthly consumption value from source document via schema
+"properties": {
+      "monthly_cost": { 
+          "type": ["number", "null"],
+          "description": "Total monthly service cost" 
+      },
+}
+.
+.
+.
+# Calculate annual consumption downstream
+total_annual_price = 
+  extract_result.json()["result"][0]["monthly_cost"] * 12
+
+```
+
+**4. Use array types for long lists.**
+
+If you need to extract a long list of items (e.g., order list in an invoice table), use array type in your schema. This helps the engine fully capture each item in the list and avoid missing trailing data.

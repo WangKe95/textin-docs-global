@@ -1,0 +1,370 @@
+---
+title: "Quickstart"
+---
+
+<Tip>
+  This documentation is based on the latest Extract API version v3. For legacy API (including **Prompt mode**) or online debugging, please visit [Textin Documentation Center](https://www.textin.com/document/legacy/open_kie_vlm_engine).
+</Tip>
+
+## Overview
+
+TextIn xParse now offers a new version of the Document Extraction API (v3). With document extraction, you can define custom extraction configurations (JSON schema), specifying the field names, types, and descriptions you want to extract. The system will extract data according to your defined configuration.
+
+By defining a JSON schema, document extraction balances **flexibility** in field definition with **stability** in output results.
+
+You can extract unified structured information from various form styles or documents and automatically convert formats based on standard field types. Define extraction JSON schemas according to your downstream system's field and structure requirements for plug-and-play API integration. For example, when automating document data entry into a system, document extraction helps you seamlessly transition from complex documents to structured system data.
+
+<Note>
+  New Features
+
+  1. More flexible file upload parameter methods, compatible with `file_url` and `file_base64`
+  2. Support for field type settings, including common formats like text, numbers, and enums
+  3. Support for extracting multiple tables with defined extraction scope
+  4. Optional coordinate information via parameter switches to improve response speed
+</Note>
+
+## Document Extraction Configuration
+
+### JSON Schema Structure Example
+
+The core configuration in document extraction is the JSON schema. Here's a structure example:
+
+```json
+{
+    "type": "object",
+    "properties": {
+        "field_name": {
+            "type": ["string","null"],
+            "description": "Field description"
+        },
+        "table_name": {
+            "type": "array",
+            "description": "Table description",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": ["string","null"],
+                        "description": ""
+                    },
+                    "category": {
+                        "type": ["string","null"],
+                        "description": ""
+                    }
+                },
+                "required": [
+                    "name",
+                    "category"
+                ]
+            }
+        }
+    },
+    "required": [
+        "field_name",
+        "table_name"
+    ]
+}
+```
+
+### JSON Schema Structure Guide
+
+We use [JSON Schema](https://json-schema.org/) to define the data structure to extract. Following schema specifications while removing unnecessary fields, document extraction uses these schema fields:
+
+- **type**: Schema type, fixed as `object` at the top level
+- **properties**: Collection of extraction fields
+  - **\<name\>**: Field name to extract, user-defined, each field contains:
+    - **type**: Field type to extract, see [Supported Field Types](#supported-field-types) list
+    - **description**: Field description
+    - **enum**: When type is `enum`, this field represents the enumeration value list
+    - **items**: When type is `array`, this field represents the field collection in the list, similar to `properties`
+- **required**: Specifies required extraction fields, order indicates output field order, only needed when type is `object`
+
+When defining data to extract, provide a name for each field and determine its type. You can add optional field descriptions to provide more context for the model, helping document extraction accurately understand what information to find and extract from documents. The more specific the field names and descriptions, the more accurately document extraction can identify and extract the correct data.
+
+### Supported Field Types
+
+- string: String
+- number: Number
+- integer: Integer
+- enum: Enumeration
+- object: Object, can contain: string, number, integer, enum
+- array: Array, can contain: string, number, integer, enum, object
+
+Note that in JSON schema, both array and object types support hierarchical nested structures for extracting tables or entity objects with multiple properties. Currently, document extraction supports **up to 3 levels** of nesting.
+
+Type can be set as a string (e.g., `"type": "string"`) or an array with null (e.g., `"type": ["string", "null"]`). Even if type doesn't include null, the API adds null by default. When data cannot be extracted, the API uniformly returns null values.
+
+### Supported Field Count
+
+For optimal performance and to ensure extraction accuracy and speed, the total number of lowest-level (leaf node) fields in the JSON schema should **not exceed 100**.
+
+### Additional Request Parameters
+
+**file**: `object` Required, the file content to process
+
+- file_url: `string` URL link to the file, choose one between file_url and file_base64
+- file_base64: `string` Base64 encoding of the file, choose one between file_url and file_base64
+- file_name: `string` File name, optional
+
+If both file_base64 and file_url exist, file_base64 takes priority.
+
+**parse_options**: `object` Parameters controlling document parsing output
+
+- **page_start**: For PDF uploads, indicates which page to start extraction from, starting from 1, defaults to first page if not provided
+- **page_count**: For PDF uploads, indicates the number of PDF pages to extract
+- **parse_mode**: Document parsing mode, defaults to scan mode
+  - auto: Engine auto-selects, widest applicability
+  - scan: Parse document as images (each PDF page as an image)
+  - lite: Lightweight version, outputs tables and text only
+  - parse: Digital text only, fastest
+  - vlm: Vision-language model parsing mode
+- **get_image**: Get images, defaults to objects
+  - none: Don't return any images
+  - page: Return full page images for each page
+  - objects: Return sub-images within pages (individual images within PDF pages)
+  - both: Return both full page and object images
+- **crop_dewarp**: Whether to apply crop and dewarp preprocessing, defaults to 0 (no cropping)
+  - 0: No cropping
+  - 1: Apply cropping
+- **remove_watermark**: Whether to apply watermark removal preprocessing, defaults to 0 (no removal)
+  - 0: No removal
+  - 1: Remove watermarks
+- **formula_level**: Formula recognition level, defaults to 0 (full recognition)
+  - 0: Recognize both inline and display formulas
+  - 1: Recognize display formulas only, skip inline formulas
+  - 2: Don't recognize formulas
+- **table_flavor**: Table format in markdown, defaults to html
+  - md: Output tables in markdown syntax
+  - html: Output tables in HTML syntax
+  - none: Don't recognize tables, treat table images as regular text paragraphs
+- **pdf_pwd**: Password required for encrypted PDFs
+
+**extract_options**: `object` Advanced extraction features
+
+- generate_citations: `boolean` Whether to generate coordinates, defaults to `true`
+- stamp: `boolean` Whether to enable stamp recognition, defaults to `true`
+
+## Using Document Extraction API: Quickstart
+
+<Tip>
+  We recommend using our [online web platform](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown) to quickly create and validate schema extraction results. See the [User Guide](/xparse/extract-tutorial-v3) for platform usage. You can then directly use the schema in [**API**](/api-reference/endpoint/extract-v3) calls.
+</Tip>
+
+You can also reference the following sample files and code to quickly validate and integrate document extraction into your systems and workflows.
+
+### Sample File
+
+<Tip>
+  Here's an official Textin sample image you can download: [Extract Sample PNG.png](https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726)
+
+  ![Extract Sample Image](/images/sample_image.webp)
+</Tip>
+
+### Prerequisites: Get API Key
+
+To use the Document Extraction API, you first need to obtain an API Key. Please log in and visit [TextIn Console - Account & Developer Info](https://www.textin.com/console/dashboard/setting) to get your x-ti-app-id and x-ti-secret-code.
+
+<Tip>
+  Want to quickly debug the API? See [Postman Debugging Tutorial](/xparse/extract-debug-postman) or [Apifox Debugging Tutorial](/xparse/extract-debug-apifox).
+</Tip>
+
+### Request Example
+
+```python
+import requests
+
+url = "https://api.textin.com/ai/service/v3/entity_extraction"
+
+payload = {
+    # File to extract
+    "file": {
+        "file_url": "https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
+    },
+    # Define extraction schema
+    "schema": {
+        "type": "object",
+        "properties": {
+            "product": {
+                "type": ["string","null"],
+                "description": ""
+            },
+            "product_list": {
+                "type": "array",
+                "description": "",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": ["string","null"],
+                            "description": ""
+                        },
+                        "category": {
+                            "type": ["string","null"],
+                            "description": ""
+                        }
+                    },
+                    "required": ["name","category"]
+                }
+            }
+        },
+        "required": [
+            "product",
+            "product_list"
+        ]
+    },
+    # Parse parameters
+    "parse_options":{
+        "crop_dewarp":1,
+        "get_image":"both"
+    },
+    # Advanced extraction config
+    "extract_options":{
+        "generate_citations": True,
+        "stamp": True
+    }
+}
+
+# Set API key
+headers = {
+    "x-ti-app-id": "<api-key>",    # Replace with your x-ti-app-id
+    "x-ti-secret-code": "<api-key>",    # Replace with your x-ti-secret-code
+    "Content-Type": "application/json"
+}
+
+response = requests.post(url, json=payload, headers=headers)
+
+print(response.json())
+```
+
+### Response Example
+
+```json
+{
+  "code": 200,
+  "message": "Success",
+  "version": "v3.0.60",
+  "duration": 8267,
+  "x_request_id": "7596b8c9d2ddbc9924b66651e9efc174",
+  "status": "finished",
+  "result": {
+    "success_count": 1,
+    "extracted_schema": {
+      "product": "Kids Looney Tunes UT (Short Sleeve T-shirt) Women's SUPIMA COTTON Crew Neck T-shirt (Short Sleeve)",
+      "product_list": [
+        {
+          "name": "Kids Looney Tunes UT (Short Sleeve T-shirt)",
+          "category": "Kids"
+        },
+        {
+          "name": "Women's SUPIMA COTTON Crew Neck T-shirt (Short Sleeve)",
+          "category": "Women's"
+        }
+      ]
+    },
+    "citations": {
+      "product": {
+        "value": "Kids Looney Tunes UT (Short Sleeve T-shirt) Women's SUPIMA COTTON Crew Neck T-shirt (Short Sleeve)",
+        "bounding_regions": [
+          {
+            "page_number": 1,
+            "position": [137, 599, 1129, 599, 1129, 625, 182, 625],
+            "text": "Kids Looney Tunes UT (Short Sleeve T-shirt)"
+          }
+        ],
+      }
+      // product_list...
+    },
+    "pages": [
+      {
+        "page_number": 1,
+        "image_id": "62bfe3c3a8e9c9cf.jpg",
+        "height": 1824,
+        "width": 600,
+        "angle": 0,
+        "status": "Success",
+        "durations": 930.178466796875
+      }
+    ]
+  }
+}
+```
+
+## Response Fields
+
+### Common Fields
+
+- x_request_id: Unique identifier for this request
+- code: Error code, 200 indicates success. See [Error Codes](#error-codes) for details
+- message: Error message, "Success" when successful
+- version: Version number, e.g., "v3.0.29_20250819"
+- duration: Total processing time (milliseconds), e.g., "8267"
+- status: Processing status, e.g., "finished"
+
+### Main Result: result Object
+
+Document extraction returns the following key information in the result object:
+
+**success_count**: Number of successfully processed document pages.
+
+**extracted_schema**: Structured extraction results in JSON format, matching the schema structure defined during extraction.
+
+**citations**: Detailed extraction information including coordinate positions, structure matches schema definition.
+
+Each extracted field contains:
+
+- **\<name\>**: Field name defined in schema
+  - **value**: Extraction result for this field
+  - **bounding_regions**: Coordinate positions for the extracted value
+    - **page_number**: Page number, starting from 1
+    - **text**: Text content within the bounding box region
+    - **position**: Coordinate position, array of length 8 representing four vertices in pixel coordinates [top-left x, top-left y, top-right x, top-right y, bottom-right x, bottom-right y, bottom-left x, bottom-left y]
+
+**stamps**: Stamp-related information
+
+- **color**: Stamp color, options: red, blue, black, other
+- **position**: Stamp coordinate information
+- **stamp_shape**: Stamp shape, options: round, oval, square, triangular, diamond, other
+- **type**: Stamp type, options: official seal, personal seal, special seal, other, contract seal, financial seal, invoice seal, business seal
+- **value**: Stamp text content
+
+**pages**: Document page information
+
+- **page_number**: Current page number
+- **image_id**: Current page image ID
+- **height**: Document page height
+- **width**: Document page width
+- **angle**: Page rotation angle (values: 0, 90, 180, 270)
+- **status**: Current page processing status
+- **durations**: Current page processing time (milliseconds)
+
+### Error Codes
+
+| **Error Code** | **Description**                                             |
+| :------ | :------------------------------------------------- |
+| 40101   | x-ti-app-id or x-ti-secret-code is empty                  |
+| 40102   | x-ti-app-id or x-ti-secret-code is invalid, authentication failed             |
+| 40103   | Client IP not in whitelist                                         |
+| 40003   | Insufficient balance, please recharge                                       |
+| 40004   | Parameter error, please check input parameters                       |
+| 40007   | Robot does not exist or is not published                                         |
+| 40008   | Robot not activated, please activate from marketplace                                   |
+| 40301   | Image type not supported                                            |
+| 40302   | File size exceeds limit, maximum 50MB                               |
+| 40303   | File type not supported, API returns detected file type             |
+| 40304   | Image dimensions out of range, width and height must be between 20 and 10000 pixels                    |
+| 40305   | File not uploaded                        |
+| 40306   | QPS limit exceeded                                            |
+| 40400   | Invalid request URL, please verify                                  |
+| 40422   | The file is corrupted                        |
+| 40423   | Password required or incorrect password    |
+| 40424   | Page number out of range              |
+| 40425   | The input file format is not supported |
+| 40428   | Process office file failed (Word and PPT to PDF conversion failed or timed out)     |
+| 500     | Engine failed (Internal server error)                            |
+| 50011   | LLM Connection Failed (LLM access timeout)                    |
+| 50012   | LLM Engine Failed                        |
+| 50207   | Partial failed (Some pages failed to parse)                          |
+
+## Prompt Mode
+
+Currently, v3 version only supports field mode (JSON Schema) extraction. For Prompt mode extraction, please refer to [v2](https://www.textin.com/document/legacy/open_kie_vlm_engine) version documentation.

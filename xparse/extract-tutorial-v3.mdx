@@ -1,0 +1,129 @@
+---
+title: "User Guide"
+description: ""
+---
+
+To create a correct and usable schema, we provide a [web interface](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown&tab=llmExtract). Follow these steps:
+
+<Steps>
+  <Step title="Upload File" stepNumber={1}>
+    Upload a file using the web interface or click a sample file. The system will automatically parse the file content to prepare for extraction.
+  </Step>
+  <Step title="Create Schema">
+    Use the web interface to create a schema from scratch.
+  </Step>
+  <Step title="Validate Extraction Results">
+    Extract using your configured schema and validate the results meet your expectations.
+  </Step>
+  <Step title="Export Schema" stepNumber={4}>
+    Once your schema is debugged, export it as a JSON file for use in API calls.
+  </Step>
+</Steps>
+
+## Create Schema
+
+You can create extraction schemas through our [web configuration interface](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown&tab=llmExtract).
+
+1. Log in and navigate to the TextIn xParse Intelligent Document Parsing [Console](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown);
+2. Upload a file or open an existing file;
+3. Switch to the **Intelligent Extraction** tab, then switch to **Field Mode**;
+
+   ![Extract V3 Schema Empty Jp](/images/extract-v3-schema-empty.jpg)
+4. In the **Extraction Configuration**, add fields you want to extract, such as "Product Name";
+5. Select the **Field Type** dropdown to set your expected return field type. See [Supported Field Types](/xparse/extract-quickstart-v3#supported-field-types) for details;
+6. Add a **Field Description** (optional);
+7. Click the **Add Field** button to add a new field;
+8. Hover over fields to reveal icons for **deleting fields** and **drag-to-reorder**;
+9. Repeat the above steps until you've added all fields you want to extract;
+
+   <img
+     src="/images/extract-v3-schema-edit.png"
+     alt="Extract V3 Schema Edit Jp"
+     title="Extract V3 Schema Edit Jp"
+     className="mx-auto"
+     style={{ width:"100%" }}
+   />
+10. Click the **Extract** button in the top right corner. The configuration panel will collapse and automatically switch to the extraction result panel where you can view all content.
+
+## Validate Extraction Results
+
+1. After extraction completes, the extraction result panel displays. Click on field extraction results to highlight corresponding coordinate boundaries (bounding boxes) in the original file area on the left;
+
+   ![Extract V3 Schema Result Panel Jp](/images/extract-v3-schema-result-panel.jpg)
+2. Extraction results default to **Preview** panel display. You can also switch to the **JSON** panel to view corresponding structured data;
+
+   <img
+     src="/images/extract-v3-json-preview.jpg"
+     alt="Extract V3 Json Preview Jp"
+     title="Extract V3 Json Preview Jp"
+     className="mx-auto"
+     style={{ width:"100%" }}
+   />
+3. You can expand the extraction configuration panel below to further adjust the schema and re-extract until results meet expectations.
+
+## Export Schema
+
+1. In the **Extraction Configuration** panel, click **Export Configuration** to download the current schema as a JSON file to your local machine;
+2. When making subsequent API calls, using this schema ensures each extraction result meets format requirements.
+
+To use the schema file, refer to this code example:
+
+```python
+import requests
+import json
+url = "https://api.textin.com/ai/service/v3/entity_extraction"
+schema_file = '/Downloads/receipt.json'  # Your actual schema file path
+payload = {
+    "file": {
+        "file_url": "https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
+    },
+	"schema":json.loads(open(schema_file).read()),  # Load schema file
+    "parse_options":{
+        "crop_dewarp":1,
+        "get_image":"both"
+    },
+    "extract_options":{
+        "generate_citations": True,
+        "stamp": True
+    }
+}
+headers = {
+    "x-ti-app-id": "<app-id>",  # Replace with your x-ti-app-id
+    "x-ti-secret-code": "<secret-code>",  # Replace with your x-ti-secret-code
+    "Content-Type": "application/json"
+}
+response = requests.post(url, json=payload, headers=headers)
+print(response.json())
+```
+
+## Common Extraction Scenarios
+
+### Extract Single Value
+
+When a field appears only once in the file, use single value extraction with `string`, `number`, `integer`, or `enum` types.
+
+![Extract V3 Mono Key Jp](/images/extract-v3-mono-key.jpg)
+
+### Extract Multiple Values
+
+When a field has multiple parallel values, use multi-value extraction with types like `array/string`, `array/number`, etc.
+
+![Extract V3 Multi Value Jp](/images/extract-v3-multi-value.jpg)
+
+![Extract V3 Multi Value Demo Jp](/images/extract-v3-multi-value-demo.jpg)
+
+### Extract Tables
+
+When content consists of multiple data groups with repeating properties (typically presented as table format in the source document), use table extraction with nested `array/object` plus single-value fields.
+
+![Extract V3 Schema Table Sample Jp](/images/extract-v3-schema-table-sample.jpg)
+
+If the file contains multiple tables, add multiple `array/object` type fields.
+
+![Extract V3 Schema Multi Table Jp](/images/extract-v3-schema-multi-table.jpg)
+
+### Extract Nested Objects
+
+When content consists of multiple related property fields, use nested object extraction with `object` type.
+
+![Extract V3 Object Jp](/images/extract-v3-object.jpg)

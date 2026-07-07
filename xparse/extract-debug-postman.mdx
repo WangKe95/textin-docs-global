@@ -1,0 +1,222 @@
+---
+title: "Postman Debugging Tutorial"
+description: "Quickly debug Document Extraction API using Postman"
+---
+
+## Overview
+
+This guide shows you how to import and debug the Document Extraction API using Postman. The Document Extraction API uses JSON-formatted request bodies and defines schemas to specify fields to extract.
+
+## Prerequisites
+
+- Postman installed ([Download](https://www.postman.com/downloads/))
+- API Key obtained (x-ti-app-id and x-ti-secret-code), available from [TextIn Console - Account & Developer Info](https://www.textin.com/console/dashboard/setting)
+
+## cURL Command Example
+
+```bash
+curl -X POST 'https://api.textin.com/ai/service/v3/entity_extraction' \
+  --header 'x-ti-app-id: YOUR_APP_ID' \
+  --header 'x-ti-secret-code: YOUR_SECRET_CODE' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "file": {
+      "file_url": "https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "product": {
+          "type": ["string","null"],
+          "description": "Product name"
+        }
+      },
+      "required": ["product"]
+    }
+  }'
+```
+
+## Import cURL Command to Postman
+
+### Step 1: Copy cURL Command
+
+Copy the cURL command above.
+
+### Step 2: Open Postman Import
+
+1. Open the Postman application
+2. Click the **Import** button in the top left corner
+
+![Click Import Button](/images/parse-debug-postman-1.webp)
+
+### Step 3: Paste cURL Command
+
+1. In the import dialog, paste the copied cURL command into the text box
+
+![Paste cURL Command](/images/parse-debug-postman-2.webp)
+
+### Step 4: Confirm Import
+
+1. Review request information on the preview page
+2. Click **Import Into Collection** or **Import Without Saving** to complete the import
+
+![Confirm Import](/images/extract-debug-postman-3.webp)
+
+## Configure Request
+
+### Modify API Key
+
+1. Click the **Headers** tab
+2. Find the `x-ti-app-id` and `x-ti-secret-code` headers
+3. Replace `YOUR_APP_ID` with your actual x-ti-app-id
+4. Replace `YOUR_SECRET_CODE` with your actual x-ti-secret-code
+
+![Modify API Key](/images/extract-debug-postman-4.webp)
+
+### Modify JSON Body
+
+The core of the Document Extraction API is the JSON schema configuration. You can modify the Body content as needed:
+
+1. Click the **Body** tab
+2. Ensure Body type is **raw** and **JSON**
+3. Modify JSON content, mainly including:
+
+
+**Modify file information:**
+
+```json
+{
+  "file": {
+    "file_url": "https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
+  },
+  ...
+}
+```
+
+Or use base64-encoded file:
+
+```json
+{
+  "file": {
+    "file_base64": "base64 encoded file content"
+  },
+  ...
+}
+```
+
+**Modify extraction schema:**
+
+Modify the schema according to your needs, for example, extract more fields:
+
+```json
+{
+  ...
+  "schema": {
+    "type": "object",
+    "properties": {
+      "product": {
+        "type": ["string","null"],
+        "description": "Product name"
+      },
+      "price": {
+        "type": ["number","null"],
+        "description": "Product price"
+      },
+      "product_list": {
+        "type": "array",
+        "description": "Product list",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": ["string","null"],
+              "description": "Product name"
+            },
+            "category": {
+              "type": ["string","null"],
+              "description": "Product category"
+            }
+          },
+          "required": ["name", "category"]
+        }
+      }
+    },
+    "required": ["product", "price", "product_list"]
+  }
+}
+```
+
+**Add parsing options (optional):**
+
+```json
+{
+  ...
+  "parse_options": {
+    "page_start": 1,
+    "page_count": 10,
+    "parse_mode": "scan",
+    "get_image": "objects",
+    "crop_dewarp": 0,
+    "remove_watermark": 0
+  }
+}
+```
+
+**Add extraction options (optional):**
+
+```json
+{
+  ...
+  "extract_options": {
+    "generate_citations": true,
+    "stamp": true
+  }
+}
+```
+
+![Modify JSON Body](/images/extract-debug-postman-5.webp)
+
+## Send Request
+
+1. After confirming all configurations are correct, click the **Send** button in the top right
+2. Wait for the response to return
+3. View response results below
+
+![Send Request](/images/extract-debug-postman-6.webp)
+
+## View Response Results
+
+Response results display in the response area below Postman:
+
+- **Body**: View JSON-formatted response content including:
+  - `extracted_schema`: Extracted structured data
+  - `citations`: Extraction results with coordinate information
+  - `pages`: Document page information
+- **Headers**: View response header information
+- **Status**: View HTTP status code (200 indicates success)
+
+Response results shown in the image above.
+
+## FAQ
+
+### Q: How do I modify fields to extract?
+
+A: Modify the `schema` field in the Body tab, defining field names, types, and descriptions according to your needs. See [Document Extraction Quickstart](/xparse/extract-quickstart-v3) for details.
+
+### Q: Response returns 400 error?
+
+A: Check if JSON format is correct and ensure schema format complies with JSON Schema specification.
+
+### Q: Response returns 401 error?
+
+A: Check if API Key is set correctly, ensuring both x-ti-app-id and x-ti-secret-code are properly replaced.
+
+### Q: How do I save requests?
+
+A: Save requests to a Collection for easy reuse. Click the "Save" button on the right side of the request.
+
+## Related Links
+
+- [Document Extraction Quickstart](/xparse/extract-quickstart-v3)
+- [Apifox Debugging Tutorial](/xparse/extract-debug-apifox)
+- [API Reference](/api-reference/endpoint/extract-v3)
