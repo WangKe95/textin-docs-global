@@ -1,39 +1,82 @@
 ---
 title: "Overview"
-description: "TextIn xParse for ETL"
+description: "Convert documents into structured data for AI and automation"
 ---
 
-TextIn xParse Intelligent Document Parsing transforms complex documents into structured data, enabling efficient and accurate information flow from any document into your database. It converts unstructured content into queryable, analyzable data assets compatible with both relational and vector databases.
+## What is xParse?
 
-TextIn xParse can extract structured data from over ten unstructured document formats including PDF, Word, Excel, PowerPoint, and images. [Document Parsing](/xparse/v1/quickstart) recognizes various elements such as text, images, tables, formulas, handwriting, form fields, headers and footers, with support for subtypes like stamps, QR codes, and barcodes. Results are returned in Markdown and JSON formats with precise page element and coordinate information. [Document Extraction](/xparse/extract-quickstart-v3) extracts specific data based on defined rules, supporting both prompt-based (natural language) and custom field schema (JSON Schema) extraction.
+xParse turns PDFs, images, and Office documents into structured data. Get clean Markdown for LLMs, extract specific fields with JSON Schema, or retrieve document elements with coordinates.
 
-The parsed or extracted data is in LLM-friendly formats, making it ideal for downstream applications such as knowledge bases, RAG, agents, or other custom workflows.
+Perfect for RAG pipelines, document automation, and data extraction workflows.
 
-### TextIn xParse: From Documents to Actionable Data Assets
-
-Provides end-to-end document structuring tools to maximize data asset value. Focus on your business—leave the rest to TextIn.
-
-![Index 1 Pn](/images/index-1.png)
-
-### Try It Now
+## Choose your workflow
 
 <CardGroup cols={2}>
-  <Card title="Online Web Platform" icon="sparkles" href="https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown">
-    Free trial with one-stop instant parsing and extraction experience
+  <Card title="Parse" icon="file-lines" href="/xparse/v1/quickstart">
+    Convert entire documents into Markdown and JSON. Preserves structure—headings, tables, formulas, reading order—so your LLM gets clean, organized input.
+    
+    **Use when you need:**
+    - Full document content for RAG or search
+    - Structured elements with coordinates
+    - Tables, images, and formulas preserved
   </Card>
-  <Card title="API" icon="sparkles" href="/api-reference">
-    Flexible integration with multiple programming languages and highly customizable interfaces
+  
+  <Card title="Extract" icon="table" href="/xparse/extract-quickstart-v3">
+    Pull out just the data you need. Define your schema, get structured JSON back. No parsing the whole document—just your invoice totals, form fields, or table rows.
+    
+    **Use when you need:**
+    - Specific fields from forms or invoices
+    - Data formatted for your database
+    - Fast extraction without full parsing
   </Card>
 </CardGroup>
 
-### Core Advantages
+## What you can process
 
-- **Support for Any Complex Layout**: Deconstructs documents of any format into semantically complete paragraphs, preserving reading order for optimal LLM compatibility.
-- **High-Precision Multi-Element Parsing**: Accurately extracts titles, formulas, charts, handwriting, stamps, cross-page paragraphs, headers/footers, form fields, and more. Industry-leading table recognition handles merged cells, cross-page tables, and borderless tables with ease.
-- **Powerful Semantic Understanding and Context Awareness**: Captures semantic relationships between layout elements, helping LLMs better comprehend documents.
-- **Advanced Preprocessing Tools**: Seamlessly integrates TextIn's image processing capabilities to handle watermarks, curved images, and blur.
-- **High-Precision Coordinate Restoration**: JSON results include precise page, element, and character-level coordinate data for easy manual review.
-- **Simple, Intelligent, and Flexible Semantic Extraction**: xParse offers both prompt mode and schema mode for extraction rule customization, enabling flexible and accurate document information extraction tailored to your business needs.
-- **Developer-Friendly**: Clear API documentation and flexible integration methods, supporting mainstream platforms like FastGPT, Coze, and CherryStudio.
+**Input formats:** PDF, images (PNG, JPG, WebP, BMP, TIFF), Word, Excel, PowerPoint, HTML, TXT, OFD, RTF
 
-Learn more: [TextIn xParse for ETL Product Introduction](https://www.textin.ai/xparse)
+**Parse returns:**
+- Markdown with preserved reading order
+- Structured elements (headings, paragraphs, tables, images)
+- Pixel coordinates for every element
+- Tables with row/column structure
+- Images, formulas, handwriting, form fields
+
+**Extract returns:**
+- JSON matching your schema
+- Source citations with page numbers and bounding boxes
+- Field-level confidence and coordinates
+
+## Common use cases
+
+- Build RAG systems with clean document input
+- Extract invoice data for accounting automation
+- Convert research papers to searchable Markdown
+- Pull form fields from scanned documents
+- Process receipts at scale
+
+## Get started
+
+<CardGroup cols={2}>
+  <Card title="Try the web app" icon="browser" href="https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown">
+    Upload a file and see results instantly
+  </Card>
+  
+  <Card title="Start with the API" icon="code" href="/xparse/v1/quickstart">
+    5-minute quickstart with Python or REST
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Get API credentials" icon="key" href="/xparse/authentication">
+    Sign up and grab your keys
+  </Card>
+  <Card title="Parse a document" icon="file-code" href="/xparse/v1/quickstart">
+    Full document → Markdown + JSON
+  </Card>
+  <Card title="Extract specific fields" icon="table-cells" href="/xparse/extract-quickstart-v3">
+    Define schema → get structured data
+  </Card>
+</CardGroup>
