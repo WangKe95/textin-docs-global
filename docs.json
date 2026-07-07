@@ -19,14 +19,37 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guide",
+        "tab": "Guides",
         "groups": [
           {
-            "group": "Document Parsing",
+            "group": "Getting Started",
+            "pages": [
+              "xparse/overview",
+              "xparse/api-key",
+              "xparse/product-manual"
+            ]
+          },
+          {
+            "group": "Parsing",
             "pages": [
               "xparse/v1/quickstart",
               "xparse/v1/parse-config",
               "xparse/v1/parse-response"
+            ]
+          },
+          {
+            "group": "Extraction",
+            "pages": [
+              "xparse/extract-quickstart-v3",
+              "xparse/extract-tutorial-v3",
+              "xparse/extract-best-practices-v3",
+              {
+                "group": "Quick Debug",
+                "pages": [
+                  "xparse/extract-debug-postman",
+                  "xparse/extract-debug-apifox"
+                ]
+              }
             ]
           }
         ]
@@ -41,11 +64,17 @@
               "api-reference/endpoint/xparse/v1/parse-async",
               "api-reference/endpoint/xparse/v1/parse-async-status"
             ]
+          },
+          {
+            "group": "Document Processing API",
+            "pages": [
+              "api-reference/endpoint/parse",
+              "api-reference/endpoint/extract-v3"
+            ]
           }
         ]
       }
-    ],
-    "anchors": []
+    ]
   },
   "logo": {
     "light": "/logo/light.png",
