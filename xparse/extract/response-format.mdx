@@ -65,35 +65,51 @@ JSON matching your schema structure:
 
 ## Citations
 
-Source locations for each extracted field:
+Source locations for each extracted field. Citations are returned as an **object** keyed by field name:
 
 ```json
 {
-  "citations": [
-    {
-      "field": "invoice_number",
-      "text": "INV-2024-001",
-      "page_number": 1,
-      "coordinates": [0.100000, 0.120000, 0.300000, 0.120000, 0.300000, 0.160000, 0.100000, 0.160000]
+  "citations": {
+    "invoice_number": {
+      "value": "INV-2024-001",
+      "bounding_regions": [
+        {
+          "page_number": 1,
+          "position": [137, 599, 1129, 599, 1129, 625, 182, 625],
+          "text": "INV-2024-001"
+        }
+      ]
     },
-    {
-      "field": "total_amount",
-      "text": "1250.00",
-      "page_number": 2,
-      "coordinates": [0.700000, 0.850000, 0.900000, 0.850000, 0.900000, 0.900000, 0.700000, 0.900000]
+    "total_amount": {
+      "value": "1250.00",
+      "bounding_regions": [
+        {
+          "page_number": 2,
+          "position": [812, 802, 878, 802, 878, 843, 812, 843],
+          "text": "1250.00"
+        }
+      ]
     }
-  ]
+  }
 }
 ```
 
-### Citation fields
+### Citation structure
+
+Each field in `citations` contains:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `field` | string | Field name from your schema |
-| `text` | string | Original text extracted from document |
+| `value` | string | Extracted value for this field |
+| `bounding_regions` | array | Array of regions where this field was found |
+
+### Bounding region fields
+
+| Field | Type | Description |
+|-------|------|-------------|
 | `page_number` | int | Page number (starts at 1) |
-| `coordinates` | array | Four-point bounding box `[x1, y1, x2, y2, x3, y3, x4, y4]` normalized to [0,1] |
+| `text` | string | Original text from document |
+| `position` | array | Four-point bounding box in **pixel coordinates** `[x1, y1, x2, y2, x3, y3, x4, y4]` |
 
 **Use for:**
 - Verifying extraction accuracy
@@ -105,10 +121,10 @@ Source locations for each extracted field:
 
 ## Coordinates
 
-Bounding boxes use four-point representation with eight values:
+Bounding boxes use four-point representation with eight values in **pixel coordinates**:
 
 ```
-coordinates: [x1, y1, x2, y2, x3, y3, x4, y4]
+position: [x1, y1, x2, y2, x3, y3, x4, y4]
 ```
 
 The four points follow this order:
@@ -121,30 +137,27 @@ The four points follow this order:
 (x4,y4) -------- (x3,y3)
 ```
 
-Each coordinate value is normalized to `[0, 1]` range (rounded to 6 decimal places), representing the proportion relative to page dimensions.
+**Coordinate format:**
+- Eight integer values representing pixel positions
+- Points ordered: top-left, top-right, bottom-right, bottom-left
+- Example: `[137, 599, 1129, 599, 1129, 625, 182, 625]`
 
-### Convert to pixels
+### Use coordinates
 
 ```python
-# Get page dimensions (from Parse API or document metadata)
-page_width, page_height = 1576, 1683
+# Extract position from citation
+citation = result.citations["invoice_number"]
+position = citation["bounding_regions"][0]["position"]
 
-# Convert normalized coordinates to pixels
-# Top-left point
-x1_px = coordinates[0] * page_width
-y1_px = coordinates[1] * page_height
+# Get four corner points (already in pixels)
+x1, y1 = position[0], position[1]  # Top-left
+x2, y2 = position[2], position[3]  # Top-right
+x3, y3 = position[4], position[5]  # Bottom-right
+x4, y4 = position[6], position[7]  # Bottom-left
 
-# Top-right point  
-x2_px = coordinates[2] * page_width
-y2_px = coordinates[3] * page_height
-
-# Bottom-right point
-x3_px = coordinates[4] * page_width
-y3_px = coordinates[5] * page_height
-
-# Bottom-left point
-x4_px = coordinates[6] * page_width
-y4_px = coordinates[7] * page_height
+# Calculate bounding box dimensions
+width = x2 - x1
+height = y3 - y1
 ```
 
 ---
@@ -195,20 +208,28 @@ See [Errors](/api-reference/endpoint/xparse/v1/errors) for complete error code l
     "name": "John Doe",
     "age": 28
   },
-  "citations": [
-    {
-      "field": "name",
-      "text": "John Doe",
-      "page_number": 1,
-      "coordinates": [...]
+  "citations": {
+    "name": {
+      "value": "John Doe",
+      "bounding_regions": [
+        {
+          "page_number": 1,
+          "position": [100, 200, 300, 200, 300, 240, 100, 240],
+          "text": "John Doe"
+        }
+      ]
     },
-    {
-      "field": "age",
-      "text": "28",
-      "page_number": 1,
-      "coordinates": [...]
+    "age": {
+      "value": "28",
+      "bounding_regions": [
+        {
+          "page_number": 1,
+          "position": [400, 200, 450, 200, 450, 240, 400, 240],
+          "text": "28"
+        }
+      ]
     }
-  ]
+  }
 }
 ```
 
@@ -235,20 +256,28 @@ See [Errors](/api-reference/endpoint/xparse/v1/errors) for complete error code l
   "extracted_data": {
     "colors": ["Red", "Blue", "Green"]
   },
-  "citations": [
-    {
-      "field": "colors[0]",
-      "text": "Red",
-      "page_number": 1,
-      "coordinates": [...]
+  "citations": {
+    "colors[0]": {
+      "value": "Red",
+      "bounding_regions": [
+        {
+          "page_number": 1,
+          "position": [150, 300, 220, 300, 220, 340, 150, 340],
+          "text": "Red"
+        }
+      ]
     },
-    {
-      "field": "colors[1]",
-      "text": "Blue",
-      "page_number": 1,
-      "coordinates": [...]
+    "colors[1]": {
+      "value": "Blue",
+      "bounding_regions": [
+        {
+          "page_number": 1,
+          "position": [250, 300, 320, 300, 320, 340, 250, 340],
+          "text": "Blue"
+        }
+      ]
     }
-  ]
+  }
 }
 ```
 
@@ -284,20 +313,28 @@ See [Errors](/api-reference/endpoint/xparse/v1/errors) for complete error code l
       {"product": "Widget B", "qty": 3}
     ]
   },
-  "citations": [
-    {
-      "field": "items[0].product",
-      "text": "Widget A",
-      "page_number": 1,
-      "coordinates": [...]
+  "citations": {
+    "items[0].product": {
+      "value": "Widget A",
+      "bounding_regions": [
+        {
+          "page_number": 1,
+          "position": [100, 400, 250, 400, 250, 440, 100, 440],
+          "text": "Widget A"
+        }
+      ]
     },
-    {
-      "field": "items[0].qty",
-      "text": "5",
-      "page_number": 1,
-      "coordinates": [...]
+    "items[0].qty": {
+      "value": "5",
+      "bounding_regions": [
+        {
+          "page_number": 1,
+          "position": [300, 400, 350, 400, 350, 440, 300, 440],
+          "text": "5"
+        }
+      ]
     }
-  ]
+  }
 }
 ```
 
@@ -330,20 +367,28 @@ See [Errors](/api-reference/endpoint/xparse/v1/errors) for complete error code l
       "address": "123 Main St"
     }
   },
-  "citations": [
-    {
-      "field": "vendor.name",
-      "text": "Acme Corp",
-      "page_number": 1,
-      "coordinates": [...]
+  "citations": {
+    "vendor.name": {
+      "value": "Acme Corp",
+      "bounding_regions": [
+        {
+          "page_number": 1,
+          "position": [100, 500, 280, 500, 280, 540, 100, 540],
+          "text": "Acme Corp"
+        }
+      ]
     },
-    {
-      "field": "vendor.address",
-      "text": "123 Main St",
-      "page_number": 1,
-      "coordinates": [...]
+    "vendor.address": {
+      "value": "123 Main St",
+      "bounding_regions": [
+        {
+          "page_number": 1,
+          "position": [100, 560, 300, 560, 300, 600, 100, 600],
+          "text": "123 Main St"
+        }
+      ]
     }
-  ]
+  }
 }
 ```
 
@@ -360,11 +405,13 @@ result = client.extract.run(file=f, schema=schema)
 if result.extracted_data.get("invoice_number") is None:
     print("Warning: Invoice number not found")
 
-# Check confidence via citations
-for citation in result.citations:
-    if citation.field == "total_amount":
-        print(f"Found total on page {citation.page_number}")
-        print(f"Original text: {citation.text}")
+# Check citations for a specific field
+if "total_amount" in result.citations:
+    citation = result.citations["total_amount"]
+    print(f"Extracted value: {citation['value']}")
+    for region in citation["bounding_regions"]:
+        print(f"Found on page {region['page_number']}")
+        print(f"Original text: {region['text']}")
 ```
 
 ---
@@ -377,14 +424,19 @@ audit_record = {
     "document_id": "doc123",
     "extracted_at": datetime.now(),
     "data": result.extracted_data,
-    "sources": [
-        {
-            "field": c.field,
-            "page": c.page_number,
-            "text": c.text
+    "sources": {
+        field: {
+            "value": citation["value"],
+            "regions": [
+                {
+                    "page": region["page_number"],
+                    "text": region["text"]
+                }
+                for region in citation["bounding_regions"]
+            ]
         }
-        for c in result.citations
-    ]
+        for field, citation in result.citations.items()
+    }
 }
 ```
 
@@ -394,20 +446,21 @@ audit_record = {
 
 ```python
 # Convert citations to UI overlay coordinates
-def build_highlights(citations, page_width, page_height):
+def build_highlights(citations):
     highlights = []
-    for citation in citations:
-        coords = citation.coordinates
-        highlights.append({
-            "field": citation.field,
-            "page": citation.page_number,
-            "bbox": {
-                "x": coords[0] * page_width,
-                "y": coords[1] * page_height,
-                "width": (coords[2] - coords[0]) * page_width,
-                "height": (coords[5] - coords[1]) * page_height
-            }
-        })
+    for field_name, citation in citations.items():
+        for region in citation["bounding_regions"]:
+            position = region["position"]
+            highlights.append({
+                "field": field_name,
+                "page": region["page_number"],
+                "bbox": {
+                    "x": position[0],      # Already in pixels
+                    "y": position[1],
+                    "width": position[2] - position[0],
+                    "height": position[5] - position[1]
+                }
+            })
     return highlights
 ```
 

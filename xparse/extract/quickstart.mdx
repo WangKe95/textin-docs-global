@@ -180,21 +180,25 @@ The API returns structured JSON matching your schema:
       "total_amount": 1250.00,
       "vendor_name": "Acme Corp"
     },
-    "citations": [
-      {
-        "field": "invoice_number",
-        "text": "INV-2024-001",
-        "page_number": 1,
-        "coordinates": [0.1, 0.1, 0.3, 0.1, 0.3, 0.15, 0.1, 0.15]
+    "citations": {
+      "invoice_number": {
+        "value": "INV-2024-001",
+        "bounding_regions": [
+          {
+            "page_number": 1,
+            "position": [137, 599, 1129, 599, 1129, 625, 182, 625],
+            "text": "INV-2024-001"
+          }
+        ]
       }
-    ]
+    }
   }
 }
 ```
 
 **What you get:**
 - `extracted_data`: JSON matching your schema
-- `citations`: Source locations with page numbers and coordinates
+- `citations`: Source locations with page numbers and pixel coordinates
 
 ---
 
@@ -207,7 +211,7 @@ You can customize extraction with additional parameters:
 {
   "parse_options": {
     "crop_dewarp": 1,        // Auto-crop and straighten (0 or 1)
-    "get_image": "both"      // Image extraction: "none", "url", "base64", "both"
+    "get_image": "both"      // Image extraction: "none", "page", "objects", "both"
   }
 }
 ```
