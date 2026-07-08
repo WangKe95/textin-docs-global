@@ -1,0 +1,171 @@
+---
+title: "Supported Files & Limits"
+description: "File formats, size limits, and recommended usage"
+---
+
+## Supported formats
+
+| Format | Parse | Extract | Extensions |
+|--------|-------|---------|------------|
+| PDF | ✓ | ✓ | `.pdf` |
+| Images | ✓ | ✓ | `.png`, `.jpg`, `.jpeg`, `.webp`, `.bmp`, `.tiff` |
+| Word | ✓ | ✓ | `.doc`, `.docx` |
+| Excel | ✓ | ✓ | `.xls`, `.xlsx`, `.csv` |
+| PowerPoint | ✓ | ✓ | `.ppt`, `.pptx` |
+| HTML | ✓ | ✓ | `.html`, `.mhtml` |
+| Text | ✓ | ✓ | `.txt`, `.rtf` |
+| OFD | ✓ | ✓ | `.ofd` |
+
+---
+
+## File limits
+
+### Sync API
+
+| Limit | Value |
+|-------|-------|
+| **Max file size** | 500MB |
+| **Max pages** | 500 pages |
+| **Timeout** | 2 minutes |
+
+### Async API
+
+| Limit | Value |
+|-------|-------|
+| **Max file size** | 500MB |
+| **Max pages** | 2,000 pages (paid), 5,000 pages (enterprise) |
+| **Timeout** | 30 minutes |
+
+---
+
+## Image requirements
+
+**Resolution:**
+- For images with aspect ratio < 2: Width and height must be between 20-20,000 pixels
+- For other images: Width and height must be between 20-10,000 pixels
+
+**Supported formats:**
+- PNG, JPEG, WebP, BMP, TIFF
+
+**Quality tips:**
+- Higher resolution = better accuracy
+- Minimum 144 DPI for scanned documents
+- Avoid heavily compressed images
+
+---
+
+## PDF requirements
+
+**Digital PDFs:**
+- Processed faster using text extraction mode
+- Tables and layouts preserved accurately
+
+**Scanned PDFs:**
+- OCR applied automatically
+- Use `crop_dewarp: true` for skewed pages
+- Use `remove_watermark: true` to improve accuracy
+
+**Password-protected PDFs:**
+- Supported with password parameter
+- See [Configuration](/xparse/v1/configuration#password)
+
+---
+
+## Office documents
+
+**Word (.doc, .docx):**
+- Converted to PDF internally
+- Formatting preserved
+- Processing time: +5-10 seconds
+
+**Excel (.xls, .xlsx, .csv):**
+- Each sheet treated as a separate page
+- Tables extracted with structure
+- Formulas preserved as text
+
+**PowerPoint (.ppt, .pptx):**
+- Each slide becomes one page
+- Text and images extracted
+- Speaker notes included
+
+<Info>
+  **Office conversion timeout:** Complex documents with many embedded objects may timeout. Simplify the document or split into smaller files if conversion fails.
+</Info>
+
+---
+
+## Recommended usage
+
+### Choose Sync vs Async
+
+```
+Documents < 50 pages
+File size < 10MB
+Need immediate result
+→ Use Sync API
+```
+
+```
+Documents > 50 pages
+File size > 10MB
+Batch processing
+→ Use Async API
+```
+
+See [Async Processing](/xparse/v1/async-processing) for details.
+
+---
+
+### Optimize for accuracy
+
+**For scanned documents:**
+- Use 144-216 DPI resolution
+- Enable `crop_dewarp: true`
+- Enable `remove_watermark: true`
+
+**For complex layouts:**
+- Use `parse_mode: "scan"` to force OCR
+- Enable `include_table_structure: true`
+- Enable `include_hierarchy: true` for better structure
+
+**For financial documents:**
+- Enable `include_table_structure: true`
+- Use `table_view: "html"` for complex tables
+- Enable `include_inline_objects: true` for formulas
+
+See [Configuration](/xparse/v1/configuration) for all options.
+
+---
+
+## Rate limits
+
+| Tier | QPS | Concurrent Jobs |
+|------|-----|----------------|
+| Free | 2 | 5 |
+| Standard | 5 | 10 |
+| Professional | 10 | 20 |
+| Enterprise | Custom | 50+ |
+
+<Info>
+  **Need higher limits?** Contact [support](https://www.textin.com/contact?type=28) to increase your QPS or page quota.
+</Info>
+
+See [Rate Limits](/api-reference/endpoint/xparse/v1/rate-limits) for details.
+
+---
+
+## Related resources
+
+<CardGroup cols={3}>
+  <Card title="Parse Quickstart" icon="rocket" href="/xparse/v1/quickstart">
+    Parse your first document
+  </Card>
+  
+  <Card title="Configuration" icon="sliders" href="/xparse/v1/configuration">
+    Optimize parsing settings
+  </Card>
+  
+  <Card title="Errors" icon="triangle-exclamation" href="/api-reference/endpoint/xparse/v1/errors">
+    Troubleshoot file errors
+  </Card>
+</CardGroup>

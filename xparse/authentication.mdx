@@ -3,6 +3,8 @@ title: "Authentication"
 description: "Get your API credentials and authenticate requests"
 ---
 
+## Authentication overview
+
 TextIn API requests are authenticated with an App ID and Secret Code sent in the request headers:
 
 ```
@@ -10,7 +12,9 @@ x-ti-app-id: YOUR_APP_ID
 x-ti-secret-code: YOUR_SECRET_CODE
 ```
 
-## Get your credentials
+---
+
+## Get credentials
 
 <Steps>
   <Step title="Open the console">
@@ -30,7 +34,40 @@ x-ti-secret-code: YOUR_SECRET_CODE
   </Step>
 </Steps>
 
-## Add credentials to a request
+---
+
+## Make your first request
+
+Test your credentials with a simple cURL request:
+
+```bash
+curl -X POST "https://api.textin.com/api/v1/xparse/parse/sync" \
+  -H "x-ti-app-id: YOUR_APP_ID" \
+  -H "x-ti-secret-code: YOUR_SECRET_CODE" \
+  -F "file_url=https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf"
+```
+
+A successful response returns `"code": 200` with parsed document data.
+
+---
+
+## Environment variables
+
+Set credentials as environment variables for easier use:
+
+**Linux/Mac:**
+```bash
+export TEXTIN_APP_ID="your-app-id"
+export TEXTIN_SECRET_CODE="your-secret-code"
+```
+
+**Windows (PowerShell):**
+```powershell
+$env:TEXTIN_APP_ID="your-app-id"
+$env:TEXTIN_SECRET_CODE="your-secret-code"
+```
+
+Then use in your code:
 
 <Tabs>
   <Tab title="cURL">
@@ -42,52 +79,33 @@ x-ti-secret-code: YOUR_SECRET_CODE
     ```
   </Tab>
 
-  <Tab title="Python">
+  <Tab title="Python (SDK)">
     ```python
+    from xparse_client import XParseClient
+
+    # Automatically reads TEXTIN_APP_ID and TEXTIN_SECRET_CODE
+    client = XParseClient()
+    ```
+  </Tab>
+
+  <Tab title="Python (requests)">
+    ```python
+    import os
     import requests
 
     response = requests.post(
         "https://api.textin.com/api/v1/xparse/parse/sync",
         headers={
-            "x-ti-app-id": "your-app-id",
-            "x-ti-secret-code": "your-secret-code"
+            "x-ti-app-id": os.getenv("TEXTIN_APP_ID"),
+            "x-ti-secret-code": os.getenv("TEXTIN_SECRET_CODE")
         },
         files={"file": open("document.pdf", "rb")}
     )
     ```
   </Tab>
-
-  <Tab title="Python SDK">
-    The SDK automatically reads from environment variables:
-
-    ```python
-    from xparse_client import XParseClient
-
-    # Reads TEXTIN_APP_ID and TEXTIN_SECRET_CODE from environment
-    client = XParseClient()
-    ```
-
-    Set environment variables:
-
-    ```bash
-    export TEXTIN_APP_ID="your-app-id"
-    export TEXTIN_SECRET_CODE="your-secret-code"
-    ```
-  </Tab>
 </Tabs>
 
-## Verify your credentials
-
-Test your credentials with a simple request:
-
-```bash
-curl -X POST "https://api.textin.com/api/v1/xparse/parse/sync" \
-  -H "x-ti-app-id: YOUR_APP_ID" \
-  -H "x-ti-secret-code: YOUR_SECRET_CODE" \
-  -F "file_url=https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf"
-```
-
-A successful response returns `"code": 200` with parsed document data. If you see an error, check the [Troubleshooting](#troubleshooting) section below.
+---
 
 ## Store credentials securely
 
@@ -95,6 +113,8 @@ A successful response returns `"code": 200` with parsed document data. If you se
 - **Don't expose** them in browser or client-side code
 - **Use environment variables** or a secret manager in production
 - **Regenerate credentials** if you suspect a leak (contact support for help)
+
+---
 
 ## Troubleshooting
 
@@ -108,13 +128,20 @@ A successful response returns `"code": 200` with parsed document data. If you se
   If you continue to see authentication errors after verifying your credentials, contact [TextIn support](https://www.textin.ai/contact) for assistance.
 </Tip>
 
+---
+
 ## Next steps
 
-<CardGroup cols={2}>
-  <Card title="Parsing Quickstart" icon="file-code" href="/xparse/v1/quickstart">
-    Parse your first document
+<CardGroup cols={3}>
+  <Card title="Parse Quickstart" icon="file-code" href="/xparse/parse/quickstart">
+    Convert document to Markdown
   </Card>
-  <Card title="Extraction Quickstart" icon="table-cells" href="/xparse/extract-quickstart-v3">
-    Extract structured data
+  
+  <Card title="Extract Quickstart" icon="table-cells" href="/xparse/extract/quickstart">
+    Pull specific fields with schema
+  </Card>
+  
+  <Card title="Supported Files" icon="file" href="/xparse/supported-files">
+    File formats and limits
   </Card>
 </CardGroup>

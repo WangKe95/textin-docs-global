@@ -1,0 +1,430 @@
+---
+title: "Response Format"
+description: "Understand extraction output structure"
+---
+
+Every extraction response returns structured JSON matching your schema, plus citations showing where data came from.
+
+## Response structure
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "extracted_data": {...},
+    "citations": [...]
+  }
+}
+```
+
+### Top-level fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `code` | int | HTTP status code (200 = success) |
+| `message` | string | Status message |
+| `data` | object | Extraction results |
+
+---
+
+## Extracted data
+
+JSON matching your schema structure:
+
+```json
+{
+  "extracted_data": {
+    "invoice_number": "INV-2024-001",
+    "invoice_date": "2024-01-15",
+    "vendor_name": "Acme Corp",
+    "total_amount": 1250.00,
+    "line_items": [
+      {
+        "description": "Product A",
+        "quantity": 5,
+        "price": 250.00
+      },
+      {
+        "description": "Product B",
+        "quantity": 2,
+        "price": 500.00
+      }
+    ]
+  }
+}
+```
+
+**Field behavior:**
+- Missing or unextractable fields return `null`
+- Arrays return empty `[]` if no matches found
+- Numbers are parsed as `float` or `int` based on schema type
+- Enums return the exact value from your predefined list
+
+---
+
+## Citations
+
+Source locations for each extracted field:
+
+```json
+{
+  "citations": [
+    {
+      "field": "invoice_number",
+      "text": "INV-2024-001",
+      "page_number": 1,
+      "coordinates": [0.100000, 0.120000, 0.300000, 0.120000, 0.300000, 0.160000, 0.100000, 0.160000]
+    },
+    {
+      "field": "total_amount",
+      "text": "1250.00",
+      "page_number": 2,
+      "coordinates": [0.700000, 0.850000, 0.900000, 0.850000, 0.900000, 0.900000, 0.700000, 0.900000]
+    }
+  ]
+}
+```
+
+### Citation fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `field` | string | Field name from your schema |
+| `text` | string | Original text extracted from document |
+| `page_number` | int | Page number (starts at 1) |
+| `coordinates` | array | Four-point bounding box `[x1, y1, x2, y2, x3, y3, x4, y4]` normalized to [0,1] |
+
+**Use for:**
+- Verifying extraction accuracy
+- Highlighting fields in UI
+- Building audit trails
+- Visual grounding
+
+---
+
+## Coordinates
+
+Bounding boxes use four-point representation with eight values:
+
+```
+coordinates: [x1, y1, x2, y2, x3, y3, x4, y4]
+```
+
+The four points follow this order:
+
+```
+(x1,y1) -------- (x2,y2)
+   |                |
+   |  Field Area    |
+   |                |
+(x4,y4) -------- (x3,y3)
+```
+
+Each coordinate value is normalized to `[0, 1]` range (rounded to 6 decimal places), representing the proportion relative to page dimensions.
+
+### Convert to pixels
+
+```python
+# Get page dimensions (from Parse API or document metadata)
+page_width, page_height = 1576, 1683
+
+# Convert normalized coordinates to pixels
+# Top-left point
+x1_px = coordinates[0] * page_width
+y1_px = coordinates[1] * page_height
+
+# Top-right point  
+x2_px = coordinates[2] * page_width
+y2_px = coordinates[3] * page_height
+
+# Bottom-right point
+x3_px = coordinates[4] * page_width
+y3_px = coordinates[5] * page_height
+
+# Bottom-left point
+x4_px = coordinates[6] * page_width
+y4_px = coordinates[7] * page_height
+```
+
+---
+
+## Error handling
+
+When extraction fails:
+
+```json
+{
+  "code": 40004,
+  "message": "Parameter error: Invalid schema structure"
+}
+```
+
+### Common errors
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| 40004 | Invalid schema | Check schema syntax and structure |
+| 40101 | Missing credentials | Include authentication headers |
+| 40102 | Invalid credentials | Verify app ID and secret code |
+| 40302 | File too large | Reduce file size or use Parse API first |
+
+See [Errors](/api-reference/endpoint/xparse/v1/errors) for complete error code list.
+
+---
+
+## Example responses
+
+### Simple fields
+
+**Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {"type": "string"},
+    "age": {"type": "number"}
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "extracted_data": {
+    "name": "John Doe",
+    "age": 28
+  },
+  "citations": [
+    {
+      "field": "name",
+      "text": "John Doe",
+      "page_number": 1,
+      "coordinates": [...]
+    },
+    {
+      "field": "age",
+      "text": "28",
+      "page_number": 1,
+      "coordinates": [...]
+    }
+  ]
+}
+```
+
+---
+
+### Array fields
+
+**Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "colors": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "extracted_data": {
+    "colors": ["Red", "Blue", "Green"]
+  },
+  "citations": [
+    {
+      "field": "colors[0]",
+      "text": "Red",
+      "page_number": 1,
+      "coordinates": [...]
+    },
+    {
+      "field": "colors[1]",
+      "text": "Blue",
+      "page_number": 1,
+      "coordinates": [...]
+    }
+  ]
+}
+```
+
+---
+
+### Table (array of objects)
+
+**Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product": {"type": "string"},
+          "qty": {"type": "number"}
+        }
+      }
+    }
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "extracted_data": {
+    "items": [
+      {"product": "Widget A", "qty": 5},
+      {"product": "Widget B", "qty": 3}
+    ]
+  },
+  "citations": [
+    {
+      "field": "items[0].product",
+      "text": "Widget A",
+      "page_number": 1,
+      "coordinates": [...]
+    },
+    {
+      "field": "items[0].qty",
+      "text": "5",
+      "page_number": 1,
+      "coordinates": [...]
+    }
+  ]
+}
+```
+
+---
+
+### Nested objects
+
+**Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "vendor": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "address": {"type": "string"}
+      }
+    }
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "extracted_data": {
+    "vendor": {
+      "name": "Acme Corp",
+      "address": "123 Main St"
+    }
+  },
+  "citations": [
+    {
+      "field": "vendor.name",
+      "text": "Acme Corp",
+      "page_number": 1,
+      "coordinates": [...]
+    },
+    {
+      "field": "vendor.address",
+      "text": "123 Main St",
+      "page_number": 1,
+      "coordinates": [...]
+    }
+  ]
+}
+```
+
+---
+
+## Common patterns
+
+### Verify extraction accuracy
+
+```python
+result = client.extract.run(file=f, schema=schema)
+
+# Check if required fields were extracted
+if result.extracted_data.get("invoice_number") is None:
+    print("Warning: Invoice number not found")
+
+# Check confidence via citations
+for citation in result.citations:
+    if citation.field == "total_amount":
+        print(f"Found total on page {citation.page_number}")
+        print(f"Original text: {citation.text}")
+```
+
+---
+
+### Build audit trail
+
+```python
+# Store extraction with source information
+audit_record = {
+    "document_id": "doc123",
+    "extracted_at": datetime.now(),
+    "data": result.extracted_data,
+    "sources": [
+        {
+            "field": c.field,
+            "page": c.page_number,
+            "text": c.text
+        }
+        for c in result.citations
+    ]
+}
+```
+
+---
+
+### Highlight fields in UI
+
+```python
+# Convert citations to UI overlay coordinates
+def build_highlights(citations, page_width, page_height):
+    highlights = []
+    for citation in citations:
+        coords = citation.coordinates
+        highlights.append({
+            "field": citation.field,
+            "page": citation.page_number,
+            "bbox": {
+                "x": coords[0] * page_width,
+                "y": coords[1] * page_height,
+                "width": (coords[2] - coords[0]) * page_width,
+                "height": (coords[5] - coords[1]) * page_height
+            }
+        })
+    return highlights
+```
+
+---
+
+## Related resources
+
+<CardGroup cols={3}>
+  <Card title="Schema Guide" icon="book" href="/xparse/extract/schema-guide">
+    Create extraction schemas
+  </Card>
+  
+  <Card title="Best Practices" icon="lightbulb" href="/xparse/extract/best-practices">
+    Improve extraction accuracy
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api-reference/endpoint/extract-v3">
+    Complete API documentation
+  </Card>
+</CardGroup>

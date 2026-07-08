@@ -1,0 +1,564 @@
+---
+title: "Configuration"
+description: "Customize parsing behavior to match your use case"
+---
+
+Control what data is returned and how documents are processed through configuration parameters.
+
+## Configuration overview
+
+```json
+{
+  "document": {
+    "password": "pdf-password"
+  },
+  "capabilities": {
+    "include_hierarchy": true,
+    "include_table_structure": true,
+    "pages": false,
+    "title_tree": false
+  },
+  "scope": {
+    "page_range": "1-10"
+  },
+  "config": {
+    "force_engine": "textin"
+  }
+}
+```
+
+---
+
+## Common use cases
+
+Quick configurations for typical scenarios:
+
+<Tabs>
+  <Tab title="RAG Pipeline">
+    ```json
+    {
+      "capabilities": {
+        "include_hierarchy": true,
+        "title_tree": true,
+        "include_table_structure": true
+      }
+    }
+    ```
+    
+    **What it does:**
+    - Preserves document structure for better chunking
+    - Extracts table of contents for navigation
+    - Returns tables in structured format
+  </Tab>
+
+  <Tab title="Financial Reports">
+    ```json
+    {
+      "capabilities": {
+        "include_table_structure": true,
+        "include_inline_objects": true,
+        "table_view": "html"
+      }
+    }
+    ```
+    
+    **What it does:**
+    - Extracts complex tables with merged cells
+    - Detects formulas in tables
+    - Returns tables in HTML format for better rendering
+  </Tab>
+
+  <Tab title="Scanned Documents">
+    ```json
+    {
+      "capabilities": {
+        "crop_dewarp": true,
+        "remove_watermark": true,
+        "include_char_details": true
+      }
+    }
+    ```
+    
+    **What it does:**
+    - Automatically crops and straightens scanned pages
+    - Removes watermarks to improve OCR accuracy
+    - Returns character-level confidence scores
+  </Tab>
+</Tabs>
+
+---
+
+## Capabilities
+
+Control the level of detail and format of returned data.
+
+### include_hierarchy
+
+Return parent-child relationships between elements.
+
+| Field | Type | Default |
+|-------|------|---------|
+| `include_hierarchy` | boolean | `true` |
+
+**When enabled:**
+- Elements include `parent_id` and `children_ids` fields
+- Build document structure trees
+- Track relationships between headings and content
+
+**Example:**
+```json
+{
+  "element_id": "el_001",
+  "type": "Title",
+  "text": "Chapter 1",
+  "metadata": {
+    "children_ids": ["el_002", "el_003"]
+  }
+}
+```
+
+**Use for:**
+- RAG chunking with context preservation
+- Document navigation
+- Hierarchical content analysis
+
+---
+
+### include_table_structure
+
+Return detailed table structure with rows, columns, and cells.
+
+| Field | Type | Default |
+|-------|------|---------|
+| `include_table_structure` | boolean | `false` |
+
+**When enabled:**
+- Tables include `table_structure` field with JSON format
+- Each cell has position, span, and coordinates
+- Supports merged cells and complex layouts
+
+**Example:**
+```json
+{
+  "type": "Table",
+  "table_structure": {
+    "rows": 3,
+    "cols": 2,
+    "cells": [
+      {
+        "row": 1,
+        "col": 1,
+        "row_span": 1,
+        "col_span": 1,
+        "text": "Product",
+        "content_type": "text"
+      }
+    ]
+  }
+}
+```
+
+**Use for:**
+- Programmatic table processing
+- Financial report analysis
+- Database imports
+- Extracting specific cells
+
+---
+
+### include_inline_objects
+
+Extract formulas, handwriting, checkboxes, and images within text.
+
+| Field | Type | Default |
+|-------|------|---------|
+| `include_inline_objects` | boolean | `false` |
+
+**When enabled:**
+- Elements include `objects` array with inline content
+- Detects: formulas (LaTeX), handwriting, checkboxes, images
+
+**Example:**
+```json
+{
+  "type": "NarrativeText",
+  "text": "The formula $f(x)=x^2+1$ shows...",
+  "objects": [
+    {
+      "type": "formula",
+      "text": "$f(x)=x^2+1$",
+      "text_range": [12, 25],
+      "coordinates": [0.220000, 0.480000, 0.300000, 0.480000, 0.300000, 0.540000, 0.220000, 0.540000]
+    }
+  ]
+}
+```
+
+**Use for:**
+- Scientific papers
+- Mathematical documents
+- Forms with checkboxes
+- Mixed content documents
+
+---
+
+### include_image_data
+
+Return image URLs and data for Image elements.
+
+| Field | Type | Default |
+|-------|------|---------|
+| `include_image_data` | boolean | `false` |
+
+**When enabled:**
+- Image elements include `image_data` field
+- Provides image URL and optional Base64 encoding
+
+**Example:**
+```json
+{
+  "type": "Image",
+  "image_data": {
+    "image_url": "https://example.com/image.png",
+    "mime_type": "image/png"
+  }
+}
+```
+
+**Use for:**
+- Downloading images from documents
+- Image processing pipelines
+- Visual content extraction
+
+---
+
+### include_char_details
+
+Return character-level coordinates and confidence scores.
+
+| Field | Type | Default |
+|-------|------|---------|
+| `include_char_details` | boolean | `false` |
+
+**When enabled:**
+- Elements include `char_details` array
+- Each character has coordinates and recognition confidence
+
+**Use for:**
+- OCR quality assessment
+- Character-level positioning
+- Low-quality document handling
+- Custom text correction
+
+---
+
+### pages
+
+Return page metadata including dimensions and element lists.
+
+| Field | Type | Default |
+|-------|------|---------|
+| `pages` | boolean | `false` |
+
+**When enabled:**
+- Response includes `pages` array
+- Each page has dimensions, DPI, rotation, element IDs
+
+**Example:**
+```json
+{
+  "pages": [
+    {
+      "page_number": 1,
+      "page_width": 1576,
+      "page_height": 1683,
+      "element_ids": ["el_001", "el_002"],
+      "page_image_url": "https://example.com/page-1.jpg"
+    }
+  ]
+}
+```
+
+**Use for:**
+- Page-level citations
+- Document preview generation
+- Page-by-page processing
+
+---
+
+### title_tree
+
+Return hierarchical table of contents.
+
+| Field | Type | Default |
+|-------|------|---------|
+| `title_tree` | boolean | `false` |
+
+**When enabled:**
+- Response includes `title_tree` with nested headings
+- Shows document outline structure
+
+**Example:**
+```json
+{
+  "title_tree": [
+    {
+      "element_id": "el_001",
+      "title": "Chapter 1",
+      "level": 1,
+      "page_number": 1,
+      "children": [
+        {
+          "title": "Section 1.1",
+          "level": 2,
+          "page_number": 2
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Use for:**
+- Document navigation
+- TOC generation
+- Section-based chunking
+
+---
+
+### table_view
+
+Control table format in Markdown output.
+
+| Field | Type | Default | Options |
+|-------|------|---------|---------|
+| `table_view` | string | `"html"` | `markdown`, `html` |
+
+**Markdown format:**
+```markdown
+| Name | Age |
+|------|-----|
+| John | 28  |
+```
+
+**HTML format:**
+```html
+<table>
+  <tr><th>Name</th><th>Age</th></tr>
+  <tr><td>John</td><td>28</td></tr>
+</table>
+```
+
+**Use HTML for:**
+- Complex tables with merged cells
+- Rich formatting preservation
+
+**Use Markdown for:**
+- Simple tables
+- LLM-friendly format
+
+---
+
+### remove_watermark
+
+Automatically detect and remove watermarks.
+
+| Field | Type | Default |
+|-------|------|---------|
+| `remove_watermark` | boolean | `false` |
+
+**When enabled:**
+- Watermarks are removed during preprocessing
+- Improves OCR accuracy on watermarked documents
+
+**Use for:**
+- Corporate documents with watermarks
+- Scanned contracts
+- Protected PDFs
+
+---
+
+### crop_dewarp
+
+Automatically crop and straighten document images.
+
+| Field | Type | Default |
+|-------|------|---------|
+| `crop_dewarp` | boolean | `false` |
+
+**When enabled:**
+- Removes borders and extra whitespace
+- Corrects perspective distortion
+- Straightens tilted pages
+
+**Use for:**
+- Scanned documents with borders
+- Photos of documents
+- Curved or warped pages
+
+---
+
+## Scope
+
+Control which pages to process.
+
+### page_range
+
+Parse only specific pages to reduce processing time and cost.
+
+| Field | Type | Example |
+|-------|------|---------|
+| `page_range` | string | `"1-5,10-15"` |
+
+**Format:**
+- Single page: `"1"`
+- Range: `"1-5"`
+- Multiple ranges: `"1-2,5-10"`
+
+**Example:**
+```json
+{
+  "scope": {
+    "page_range": "1-10"
+  }
+}
+```
+
+<Info>
+  **Page limits:**
+  - Sync API: 500 pages max
+  - Async API: 2000 pages max (paid), 5000 pages (enterprise)
+  
+  For larger documents, use `page_range` for batch processing or upgrade your plan.
+</Info>
+
+---
+
+## Document settings
+
+### password
+
+Provide password for encrypted PDFs.
+
+| Field | Type |
+|-------|------|
+| `password` | string |
+
+**Example:**
+```json
+{
+  "document": {
+    "password": "your-pdf-password"
+  }
+}
+```
+
+---
+
+## Advanced configuration
+
+<Warning>
+  These settings are for advanced users. Improper configuration may degrade parsing quality.
+</Warning>
+
+### force_engine
+
+Force a specific parsing engine.
+
+| Field | Options | Description |
+|-------|---------|-------------|
+| `force_engine` | `textin`, `textin_gui` | Choose parsing engine |
+
+**Engines:**
+- `textin`: Default engine, best for documents
+- `textin_gui`: Specialized for UI screenshots (buttons, inputs, checkboxes)
+
+**Example:**
+```json
+{
+  "config": {
+    "force_engine": "textin"
+  }
+}
+```
+
+---
+
+### engine_params
+
+Pass custom parameters to the parsing engine.
+
+| Parameter | Type | Options | Description |
+|-----------|------|---------|-------------|
+| `parse_mode` | string | `auto`, `scan`, `parse`, `lite`, `vlm` | PDF parsing strategy |
+| `formula_level` | int | `0`, `1` | Formula recognition level (0: standard, 1: enhanced) |
+| `image_output_type` | string | `url`, `base64` | Image output format |
+| `recognize_chemical` | boolean | `true`, `false` | Extract chemical formulas (VLM mode only) |
+
+**Example:**
+```json
+{
+  "config": {
+    "engine_params": {
+      "parse_mode": "vlm",
+      "formula_level": 1,
+      "recognize_chemical": true
+    }
+  }
+}
+```
+
+**Parse modes:**
+- `auto`: Engine auto-selects (recommended)
+- `scan`: Treat PDF as images (slower, higher accuracy)
+- `parse`: Extract text directly (faster, digital PDFs only)
+- `lite`: Tables and text only (fastest)
+- `vlm`: Vision-language model (best quality, slower)
+
+---
+
+## Performance tips
+
+<AccordionGroup>
+  <Accordion title="Enable only needed capabilities" icon="toggle-on">
+    Each capability increases processing time and response size. Only enable what you need.
+    
+    For example, if you don't need character-level details, keep `include_char_details: false`.
+  </Accordion>
+
+  <Accordion title="Use page_range for large documents" icon="file">
+    Process a subset of pages first to test configuration, then process the full document.
+    
+    ```json
+    {"scope": {"page_range": "1-5"}}
+    ```
+  </Accordion>
+
+  <Accordion title="Use async for files over 50 pages" icon="clock">
+    Sync API may timeout on large files. Use the async API for better reliability.
+    
+    See [Async Processing](/xparse/v1/async-processing) for details.
+  </Accordion>
+
+  <Accordion title="Cache results by file_id" icon="database">
+    Identical documents produce the same `file_id`. Use it to implement result caching.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Related resources
+
+<CardGroup cols={3}>
+  <Card title="Quickstart" icon="rocket" href="/xparse/v1/quickstart">
+    Parse your first document
+  </Card>
+
+  <Card title="Response Format" icon="code" href="/xparse/v1/response-format">
+    Understand the response structure
+  </Card>
+
+  <Card title="Examples" icon="book-open" href="/xparse/v1/examples">
+    See configuration in action
+  </Card>
+</CardGroup>

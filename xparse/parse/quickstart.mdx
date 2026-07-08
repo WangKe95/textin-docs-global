@@ -1,0 +1,147 @@
+---
+title: "Quickstart"
+description: "Parse your first document in 5 minutes"
+---
+
+Parse a document and get AI-ready Markdown in minutes.
+
+<Tip>
+  **Recommended:** Use Python SDK for fastest setup. For REST API, see examples below.
+</Tip>
+
+## Before you start
+
+1. Get API credentials from the [TextIn Console](https://www.textin.ai/console/dashboard/setting)
+2. Prepare a document or use our [sample PDF](https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf)
+
+<Info>
+  **Supported formats:** PDF, images (PNG, JPG, WebP, BMP, TIFF), Word, Excel, PowerPoint, HTML, TXT, OFD, RTF  
+  **File size limit:** 500MB  
+  **Page limits:** Sync API (500 pages), Async API (2000+ pages)
+</Info>
+
+---
+
+## Install SDK
+
+<Tabs>
+  <Tab title="Python">
+    ```bash
+    # Install SDK
+    pip install xparse-client
+    ```
+    
+    ```python
+    from xparse_client import XParseClient
+
+    # Initialize client
+    client = XParseClient(
+        app_id="your-app-id",
+        secret_code="your-secret-code"
+    )
+
+    # Parse document
+    with open("document.pdf", "rb") as f:
+        result = client.parse.run(file=f, filename="document.pdf")
+    
+    # Get Markdown
+    print(result.markdown)
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.textin.com/api/v1/xparse/parse/sync" \
+      -H "x-ti-app-id: YOUR_APP_ID" \
+      -H "x-ti-secret-code: YOUR_SECRET_CODE" \
+      -F "file=@document.pdf"
+    ```
+  </Tab>
+
+  <Tab title="Node.js">
+    ```bash
+    # Install SDK
+    npm install xparse-client
+    ```
+    
+    ```javascript
+    import { XParseClient } from 'xparse-client';
+    import fs from 'fs';
+
+    // Initialize client
+    const client = new XParseClient({
+      appId: 'your-app-id',
+      secretCode: 'your-secret-code'
+    });
+
+    // Parse document
+    const result = await client.parse.run({
+      file: fs.createReadStream('document.pdf'),
+      filename: 'document.pdf'
+    });
+    
+    // Get Markdown
+    console.log(result.markdown);
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## View result
+
+The API returns clean Markdown with preserved document structure:
+
+```markdown
+# Annual Report 2024
+
+## Executive Summary
+
+This report presents...
+```
+
+**Use the Markdown for:**
+- RAG pipelines and vector embeddings
+- LLM input (GPT-4, Claude, etc.)
+- Search indexing
+- Document Q&A systems
+
+---
+
+## What's included
+
+<CardGroup cols={2}>
+  <Card title="Markdown" icon="file-lines">
+    Clean, structured content ready for LLMs
+  </Card>
+  
+  <Card title="Structured Elements" icon="cube">
+    JSON elements with types and coordinates
+  </Card>
+  
+  <Card title="Tables" icon="table">
+    HTML, Markdown, or structured JSON format
+  </Card>
+  
+  <Card title="Coordinates" icon="location-dot">
+    Bounding boxes for visual grounding
+  </Card>
+</CardGroup>
+
+---
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Configuration" icon="sliders" href="/xparse/parse/configuration">
+    Control parsing behavior
+  </Card>
+  
+  <Card title="Response Format" icon="code" href="/xparse/parse/response-format">
+    Understand the output structure
+  </Card>
+  
+  <Card title="Examples" icon="book-open" href="/xparse/parse/examples">
+    See real-world parsing examples
+  </Card>
+</CardGroup>

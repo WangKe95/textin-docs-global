@@ -1,0 +1,587 @@
+---
+title: "Examples"
+description: "Real-world examples for common parsing tasks"
+---
+
+Learn by example. Copy and adapt these code snippets for your use case.
+
+<Note>
+  All examples use the Python SDK. For REST API examples, see [API Reference](/api-reference/endpoint/xparse/v1/parse-sync).
+</Note>
+
+---
+
+## Parse a PDF
+
+Convert a PDF document to Markdown and structured JSON.
+
+```python
+from xparse_client import XParseClient
+
+client = XParseClient()
+
+# Parse PDF
+with open("document.pdf", "rb") as f:
+    result = client.parse.run(
+        file=f,
+        filename="document.pdf"
+    )
+
+# Get Markdown
+markdown = result.markdown
+print(markdown)
+
+# Save to file
+with open("output.md", "w", encoding="utf-8") as f:
+    f.write(markdown)
+```
+
+**Use for:**
+- Converting PDFs for RAG
+- Generating searchable content
+- Creating LLM-ready input
+
+---
+
+## Parse from URL
+
+Parse a document directly from a URL without downloading it first.
+
+```python
+result = client.parse.run(
+    file_url="https://example.com/document.pdf"
+)
+
+markdown = result.markdown
+```
+
+**Use for:**
+- Processing documents from cloud storage
+- Avoiding local file downloads
+- Webhook-triggered processing
+
+---
+
+## Parse specific pages
+
+Parse only selected pages to reduce cost and processing time.
+
+```python
+from xparse_client import ParseConfig
+
+# Parse only pages 1-10
+result = client.parse.run(
+    file=f,
+    filename="large_document.pdf",
+    config=ParseConfig(
+        scope={"page_range": "1-10"}
+    )
+)
+
+# Or multiple ranges
+config = ParseConfig(
+    scope={"page_range": "1-5,10-15,20"}
+)
+```
+
+**Use for:**
+- Testing configuration on large documents
+- Extracting specific sections
+- Reducing processing cost
+
+---
+
+## Extract tables
+
+Get tables in structured JSON format.
+
+```python
+from xparse_client import ParseConfig, Capabilities
+
+# Enable table structure
+result = client.parse.run(
+    file=f,
+    filename="financial_report.pdf",
+    config=ParseConfig(
+        capabilities=Capabilities(
+            include_table_structure=True,
+            table_view="html"  # or "markdown"
+        )
+    )
+)
+
+# Find all tables
+tables = [el for el in result.elements if el.type == "Table"]
+
+# Process first table
+if tables:
+    table = tables[0]
+    
+    # Get Markdown/HTML representation
+    print(table.text)
+    
+    # Or access structured data
+    if hasattr(table, 'table_structure'):
+        rows = table.table_structure.rows
+        cols = table.table_structure.cols
+        print(f"Table size: {rows}x{cols}")
+        
+        # Extract specific cell
+        for cell in table.table_structure.cells:
+            if cell.row == 1 and cell.col == 1:
+                print(f"Cell [1,1]: {cell.text}")
+```
+
+**Use for:**
+- Financial report analysis
+- Importing spreadsheet data
+- Extracting invoice line items
+
+---
+
+## Extract formulas
+
+Get mathematical formulas in LaTeX format.
+
+```python
+config = ParseConfig(
+    capabilities=Capabilities(
+        include_inline_objects=True  # Detect inline formulas
+    )
+)
+
+result = client.parse.run(file=f, filename="paper.pdf", config=config)
+
+# Find formulas as standalone elements
+formulas = [el for el in result.elements if el.type == "Formula"]
+
+for formula in formulas:
+    print(f"Formula: {formula.text}")  # LaTeX format
+
+# Find inline formulas within text
+for element in result.elements:
+    if hasattr(element, 'objects') and element.objects:
+        for obj in element.objects:
+            if obj.type == "formula":
+                print(f"Inline formula: {obj.text}")
+```
+
+**Use for:**
+- Scientific papers
+- Math textbooks
+- Technical documentation
+
+---
+
+## Parse scanned documents
+
+Process scanned or photographed documents with OCR enhancements.
+
+```python
+config = ParseConfig(
+    capabilities=Capabilities(
+        crop_dewarp=True,  # Fix skew and borders
+        remove_watermark=True,  # Remove watermarks
+        include_char_details=True  # Get OCR confidence
+    )
+)
+
+result = client.parse.run(file=f, filename="scan.jpg", config=config)
+
+# Check OCR quality
+for element in result.elements:
+    if hasattr(element, 'char_details'):
+        # Calculate average confidence
+        confidences = [char.recognition.confidence 
+                      for char in element.char_details]
+        avg_confidence = sum(confidences) / len(confidences)
+        
+        if avg_confidence < 0.9:
+            print(f"Low confidence text: {element.text[:50]}...")
+```
+
+**Use for:**
+- Historical documents
+- Scanned contracts
+- Photographed receipts
+- Low-quality PDFs
+
+---
+
+## Process large files asynchronously
+
+Handle large documents without timeouts.
+
+```python
+# Create async job
+with open("large_report.pdf", "rb") as f:
+    job = client.parse.async_run(
+        file=f,
+        filename="large_report.pdf"
+    )
+
+job_id = job.job_id
+print(f"Job created: {job_id}")
+
+# Wait for completion
+import time
+
+while True:
+    status = client.parse.get_async_status(job_id)
+    
+    if status.status == "completed":
+        result = client.parse.get_async_result(job_id)
+        print(f"Success! {len(result.elements)} elements")
+        break
+    elif status.status == "failed":
+        print(f"Failed: {status.message}")
+        break
+    
+    print(f"Status: {status.status}")
+    time.sleep(5)
+```
+
+**Use for:**
+- Files over 50 pages
+- Batch processing
+- Production workflows
+
+See [Async Processing](/xparse/v1/async-processing) for complete guide.
+
+---
+
+## Build a RAG pipeline
+
+Convert documents to chunks for vector search.
+
+```python
+from xparse_client import ParseConfig, Capabilities
+
+# Parse with hierarchy for better chunking
+config = ParseConfig(
+    capabilities=Capabilities(
+        include_hierarchy=True,
+        title_tree=True,
+        include_table_structure=True
+    )
+)
+
+result = client.parse.run(file=f, filename="knowledge_base.pdf", config=config)
+
+# Strategy 1: Split by Markdown headings
+chunks = result.markdown.split('\n## ')  # Split on H2 headings
+
+# Strategy 2: Split by elements with context
+def chunk_by_elements(elements, chunk_size=500):
+    chunks = []
+    current_chunk = []
+    current_size = 0
+    current_context = ""  # Track heading context
+    
+    for el in elements:
+        # Update context on headings
+        if el.type == "Title":
+            current_context = el.text
+        
+        text = el.text
+        text_len = len(text)
+        
+        # Add element to chunk
+        if current_size + text_len > chunk_size and current_chunk:
+            # Finalize chunk with context
+            chunks.append({
+                "text": "\n".join(current_chunk),
+                "context": current_context,
+                "page": el.page_number
+            })
+            current_chunk = []
+            current_size = 0
+        
+        current_chunk.append(text)
+        current_size += text_len
+    
+    # Add final chunk
+    if current_chunk:
+        chunks.append({
+            "text": "\n".join(current_chunk),
+            "context": current_context
+        })
+    
+    return chunks
+
+chunks = chunk_by_elements(result.elements)
+
+# Generate embeddings
+from openai import OpenAI
+
+openai_client = OpenAI()
+
+for chunk in chunks:
+    embedding = openai_client.embeddings.create(
+        model="text-embedding-3-small",
+        input=chunk["text"]
+    )
+    
+    # Store in vector database
+    # vector_db.insert(embedding.data[0].embedding, metadata=chunk)
+```
+
+**Use for:**
+- Building knowledge bases
+- Document Q&A systems
+- Semantic search
+
+---
+
+## Extract images
+
+Get images from documents with URLs and metadata.
+
+```python
+config = ParseConfig(
+    capabilities=Capabilities(
+        include_image_data=True
+    )
+)
+
+result = client.parse.run(file=f, filename="report.pdf", config=config)
+
+# Find all images
+images = [el for el in result.elements if el.type == "Image"]
+
+# Download images
+import requests
+
+for i, img in enumerate(images):
+    if hasattr(img, 'image_data') and img.image_data:
+        # Download from URL
+        response = requests.get(img.image_data.image_url)
+        
+        # Save to file
+        ext = img.image_data.mime_type.split('/')[-1]
+        with open(f"image_{i}.{ext}", "wb") as f:
+            f.write(response.content)
+        
+        print(f"Saved image_{i}.{ext}")
+```
+
+**Use for:**
+- Extracting charts and diagrams
+- Building image databases
+- Visual content analysis
+
+---
+
+## Batch processing
+
+Process multiple documents in parallel.
+
+```python
+import asyncio
+from pathlib import Path
+
+files = list(Path("documents/").glob("*.pdf"))
+
+# Create jobs for all files
+job_ids = []
+for filepath in files:
+    with open(filepath, "rb") as f:
+        job = client.parse.async_run(
+            file=f,
+            filename=filepath.name
+        )
+        job_ids.append((job.job_id, filepath.name))
+        print(f"Created job for {filepath.name}: {job.job_id}")
+
+# Wait for all jobs
+async def wait_for_all():
+    results = {}
+    
+    while job_ids:
+        # Check each job
+        for job_id, filename in list(job_ids):
+            status = client.parse.get_async_status(job_id)
+            
+            if status.status == "completed":
+                result = client.parse.get_async_result(job_id)
+                results[filename] = result
+                job_ids.remove((job_id, filename))
+                print(f"Completed: {filename}")
+            elif status.status == "failed":
+                print(f"Failed: {filename}")
+                job_ids.remove((job_id, filename))
+        
+        # Wait before next poll
+        if job_ids:
+            await asyncio.sleep(5)
+    
+    return results
+
+# Run
+results = asyncio.run(wait_for_all())
+
+print(f"Processed {len(results)} documents")
+```
+
+**Use for:**
+- Processing document archives
+- Bulk imports
+- Overnight batch jobs
+
+---
+
+## Error handling
+
+Handle common errors gracefully.
+
+```python
+from xparse_client.exceptions import XParseError
+
+try:
+    result = client.parse.run(file=f, filename="document.pdf")
+except XParseError as e:
+    if e.code == 40302:
+        print("File too large, use async API")
+        # Retry with async
+        job = client.parse.async_run(file=f, filename="document.pdf")
+    elif e.code == 40423:
+        print("PDF is password protected")
+        # Retry with password
+        config = ParseConfig(
+            document={"password": "your-password"}
+        )
+        result = client.parse.run(file=f, config=config)
+    elif e.code == 40424:
+        print("Invalid page range")
+        # Fix page range
+        config = ParseConfig(scope={"page_range": "1-10"})
+        result = client.parse.run(file=f, config=config)
+    else:
+        print(f"Error: {e.message}")
+        raise
+```
+
+**Common errors:**
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| 40302 | File too large | Use async API |
+| 40423 | Wrong password | Provide correct password |
+| 40424 | Invalid page range | Fix `page_range` parameter |
+| 40003 | Insufficient balance | Recharge account |
+
+---
+
+## Password-protected PDFs
+
+Parse encrypted PDF documents.
+
+```python
+from xparse_client import ParseConfig
+
+config = ParseConfig(
+    document={"password": "your-pdf-password"}
+)
+
+result = client.parse.run(
+    file=f,
+    filename="protected.pdf",
+    config=config
+)
+```
+
+---
+
+## Get coordinates
+
+Extract element positions for visual grounding.
+
+```python
+result = client.parse.run(file=f, filename="document.pdf")
+
+for element in result.elements:
+    if element.type == "Table":
+        # Get four-point coordinates [x1, y1, x2, y2, x3, y3, x4, y4]
+        coords = element.coordinates
+        
+        # Convert to pixels (requires page dimensions)
+        page_width, page_height = 1576, 1683
+        
+        # Top-left corner
+        x1 = int(coords[0] * page_width)
+        y1 = int(coords[1] * page_height)
+        
+        # Bottom-right corner  
+        x3 = int(coords[4] * page_width)
+        y3 = int(coords[5] * page_height)
+        
+        print(f"Table at page {element.page_number}")
+        print(f"  Position: top-left ({x1}, {y1}) to bottom-right ({x3}, {y3})")
+```
+
+**Use for:**
+- Drawing bounding boxes
+- Visual document viewers
+- Citation links
+
+---
+
+## Build citations with sources
+
+Track where information came from in the original document.
+
+```python
+result = client.parse.run(file=f, filename="research_paper.pdf")
+
+def build_citation(element):
+    return {
+        "text": element.text,
+        "page": element.page_number,
+        "type": element.type,
+        "bbox": element.coordinates
+    }
+
+# Create citations for all elements
+citations = [build_citation(el) for el in result.elements]
+
+# Example: RAG with citations
+chunks_with_citations = []
+for i, element in enumerate(result.elements):
+    chunks_with_citations.append({
+        "chunk_id": i,
+        "text": element.text,
+        "metadata": {
+            "page": element.page_number,
+            "type": element.type,
+            "source_file": "research_paper.pdf"
+        }
+    })
+
+# When retrieving, include citation
+def format_answer_with_citation(answer, source_chunks):
+    citations = []
+    for chunk in source_chunks:
+        citations.append(
+            f"[Page {chunk['metadata']['page']}]"
+        )
+    
+    return f"{answer}\n\nSources: {', '.join(citations)}"
+```
+
+---
+
+## Related resources
+
+<CardGroup cols={3}>
+  <Card title="Configuration" icon="sliders" href="/xparse/v1/configuration">
+    Customize parsing behavior
+  </Card>
+
+  <Card title="Response Format" icon="code" href="/xparse/v1/response-format">
+    Understand response structure
+  </Card>
+
+  <Card title="API Reference" icon="book" href="/api-reference/endpoint/xparse/v1/parse-sync">
+    Complete API documentation
+  </Card>
+</CardGroup>

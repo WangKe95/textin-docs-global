@@ -25,30 +25,29 @@
             "group": "Getting Started",
             "pages": [
               "xparse/overview",
-              "xparse/authentication"
+              "xparse/authentication",
+              "xparse/supported-files"
             ]
           },
           {
-            "group": "Parsing",
+            "group": "Parse",
             "pages": [
-              "xparse/v1/quickstart",
-              "xparse/v1/parse-config",
-              "xparse/v1/parse-response"
+              "xparse/parse/overview",
+              "xparse/parse/quickstart",
+              "xparse/parse/configuration",
+              "xparse/parse/response-format",
+              "xparse/parse/async-processing",
+              "xparse/parse/examples"
             ]
           },
           {
-            "group": "Extraction",
+            "group": "Extract",
             "pages": [
-              "xparse/extract-quickstart-v3",
-              "xparse/extract-tutorial-v3",
-              "xparse/extract-best-practices-v3",
-              {
-                "group": "Quick Debug",
-                "pages": [
-                  "xparse/extract-debug-postman",
-                  "xparse/extract-debug-apifox"
-                ]
-              }
+              "xparse/extract/overview",
+              "xparse/extract/quickstart",
+              "xparse/extract/schema-guide",
+              "xparse/extract/response-format",
+              "xparse/extract/best-practices"
             ]
           }
         ]
@@ -57,7 +56,7 @@
         "tab": "API",
         "groups": [
           {
-            "group": "Document Parsing API",
+            "group": "Parse API",
             "pages": [
               "api-reference/endpoint/xparse/v1/parse-sync",
               "api-reference/endpoint/xparse/v1/parse-async",
@@ -65,7 +64,7 @@
             ]
           },
           {
-            "group": "Document Extraction API",
+            "group": "Extract API",
             "pages": [
               "api-reference/endpoint/extract-v3"
             ]

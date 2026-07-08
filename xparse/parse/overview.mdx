@@ -1,0 +1,186 @@
+---
+title: "Parse Overview"
+description: "Convert documents into Markdown and structured JSON"
+---
+
+## What is Parse?
+
+Parse converts entire documents into clean, structured data—Markdown for LLMs and JSON elements with coordinates for visual grounding.
+
+```
+Document → Parse → Markdown + Elements + Coordinates
+```
+
+---
+
+## Output types
+
+### Markdown
+
+Clean, AI-ready text preserving:
+- Heading hierarchy (`#`, `##`, `###`)
+- Paragraphs and lists
+- Tables (HTML or Markdown format)
+- Formulas in LaTeX
+- Reading order
+
+**Use for:**
+- RAG pipelines
+- LLM input (GPT-4, Claude, etc.)
+- Vector embeddings
+- Search indexing
+
+---
+
+### Elements
+
+Structured JSON array of document components:
+- Text content
+- Element type (Title, NarrativeText, Table, Image, Formula, etc.)
+- Page number
+- Bounding box coordinates
+
+**Use for:**
+- Layout analysis
+- Visual grounding (match text to image regions)
+- Citations with source locations
+- Content extraction by type
+
+---
+
+### Coordinates
+
+Four-point bounding boxes for every element:
+- Normalized to [0,1] range
+- Convert to pixels with page dimensions
+- Precise positioning on original document
+
+**Use for:**
+- Drawing overlays on document images
+- Interactive document viewers
+- Source citations with visual links
+
+---
+
+## Parse workflow
+
+<Steps>
+  <Step title="Upload document">
+    Send file or URL via API
+  </Step>
+  
+  <Step title="Parse processes document">
+    OCR, layout analysis, structure detection
+  </Step>
+  
+  <Step title="Receive structured output">
+    Markdown + Elements + Coordinates
+  </Step>
+  
+  <Step title="Use in your application">
+    Feed to LLM, store in vector DB, build citations
+  </Step>
+</Steps>
+
+---
+
+## Parse vs Extract
+
+| Feature | Parse | Extract |
+|---------|-------|---------|
+| **Output** | Full document content | Specific fields only |
+| **Format** | Markdown + JSON elements | JSON matching your schema |
+| **Use case** | RAG, search, full content | Forms, invoices, tables |
+| **Speed** | Slower (processes everything) | Faster (targeted extraction) |
+| **Schema** | Not required | Required |
+
+**When to use Parse:**
+- You need the entire document content
+- Building RAG or search systems
+- Want structure preserved (headings, tables, reading order)
+- Need coordinates for visual grounding
+
+**When to use Extract:**
+- You only need specific fields (invoice total, dates, names)
+- Working with forms or structured documents
+- Want data formatted for your database
+- Need fast extraction without full parsing
+
+See [Extract Overview](/xparse/extract/overview) for extraction details.
+
+---
+
+## Use cases
+
+### RAG pipelines
+
+Parse documents into clean Markdown → Split into chunks → Generate embeddings → Store in vector database
+
+```python
+# Parse document
+result = client.parse.run(file=f, filename="knowledge_base.pdf")
+markdown = result.markdown
+
+# Send to LLM
+response = openai.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": f"Summarize: {markdown}"}]
+)
+```
+
+---
+
+### Search indexing
+
+Parse documents → Index Markdown content → Enable full-text search
+
+---
+
+### Knowledge bases
+
+Parse documents → Preserve structure with headings → Build table of contents → Create navigation
+
+```python
+# Get document structure
+config = ParseConfig(capabilities=Capabilities(title_tree=True))
+result = client.parse.run(file=f, config=config)
+
+# Build table of contents
+for heading in result.title_tree:
+    print(f"{'  ' * heading.level}{heading.title} (p.{heading.page_number})")
+```
+
+---
+
+### Document QA
+
+Parse documents → Extract elements with coordinates → Show sources with page numbers and bounding boxes
+
+```python
+# Parse with coordinates
+result = client.parse.run(file=f, filename="contract.pdf")
+
+# Build citations
+for element in result.elements:
+    if "termination" in element.text.lower():
+        print(f"Found on page {element.page_number}")
+        print(f"Coordinates: {element.coordinates}")
+```
+
+---
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Quickstart" icon="rocket" href="/xparse/parse/quickstart">
+    Parse your first document in 5 minutes
+  </Card>
+  
+  <Card title="Configuration" icon="sliders" href="/xparse/parse/configuration">
+    Control parsing behavior
+  </Card>
+  
+  <Card title="Response Format" icon="code" href="/xparse/parse/response-format">
+    Understand the output structure
+  </Card>
+</CardGroup>

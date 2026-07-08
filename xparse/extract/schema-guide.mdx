@@ -1,0 +1,272 @@
+---
+title: "Schema Guide"
+description: "Create extraction schemas using the visual builder"
+---
+
+Create extraction schemas visually—no need to write JSON manually.
+
+## Why schema matters
+
+Schemas tell the extraction API exactly what fields to pull from your documents. The more specific your field names and descriptions, the more accurate the extraction.
+
+---
+
+## Create schema in visual builder
+
+Use the [web interface](https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown&tab=llmExtract) to build schemas without writing JSON:
+
+<Steps>
+  <Step title="Upload file">
+    Upload a sample document or use a provided example
+  </Step>
+  <Step title="Add fields">
+    Define field names, types, and descriptions
+  </Step>
+  <Step title="Validate results">
+    Extract and verify the output matches your expectations
+  </Step>
+  <Step title="Export schema">
+    Download as JSON for API use
+  </Step>
+</Steps>
+
+---
+
+## Step-by-step walkthrough
+
+<Steps>
+  <Step title="Upload File" stepNumber={1}>
+    Upload a file using the web interface or click a sample file. The system will automatically parse the file content to prepare for extraction.
+  </Step>
+  <Step title="Create Schema">
+    Use the web interface to create a schema from scratch.
+  </Step>
+  <Step title="Validate Extraction Results">
+    Extract using your configured schema and validate the results meet your expectations.
+  </Step>
+  <Step title="Export Schema" stepNumber={4}>
+    Once your schema is debugged, export it as a JSON file for use in API calls.
+  </Step>
+</Steps>
+
+### 1. Open console
+
+Navigate to the [TextIn Console](https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown) and switch to the **Intelligent Extraction** tab.
+
+![Extract V3 Schema Empty Jp](/images/extract-v3-schema-empty.jpg)
+
+---
+
+### 2. Add fields
+
+In **Extraction Configuration**, add fields you want to extract:
+
+1. Enter field name (e.g., "invoice_number")
+2. Select field type from dropdown (string, number, array, object, etc.)
+3. Add field description (helps model understand what to extract)
+4. Click **Add Field**
+
+<img
+  src="/images/extract-v3-schema-edit.png"
+  alt="Extract V3 Schema Edit"
+  className="mx-auto"
+  style={{ width:"100%" }}
+/>
+
+**Tips:**
+- Hover over fields to delete or drag-to-reorder
+- Use specific field names ("invoice_total" not "amount")
+- Add clear descriptions ("Total amount including tax")
+
+---
+
+### 3. Validate results
+
+Click **Extract** to test your schema. The result panel shows extracted data.
+
+![Extract V3 Schema Result Panel Jp](/images/extract-v3-schema-result-panel.jpg)
+
+**Review:**
+- Click extracted fields to highlight their location in the document
+- Switch between **Preview** and **JSON** views
+- Adjust schema and re-extract until results match expectations
+
+<img
+  src="/images/extract-v3-json-preview.jpg"
+  alt="Extract V3 JSON Preview"
+  className="mx-auto"
+  style={{ width:"100%" }}
+/>
+
+---
+
+### 4. Export schema
+
+Click **Export Configuration** to download your schema as JSON.
+
+Use it in API calls:
+
+```python
+import json
+from xparse_client import XParseClient
+
+client = XParseClient()
+
+# Load exported schema
+schema = json.loads(open("invoice_schema.json").read())
+
+# Extract with schema
+with open("invoice.pdf", "rb") as f:
+    result = client.extract.run(file=f, schema=schema)
+```
+
+---
+
+## Schema structure
+
+Behind the scenes, your visual configuration becomes JSON Schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "field_name": {
+      "type": "string",
+      "description": "Field description"
+    }
+  },
+  "required": ["field_name"]
+}
+```
+
+**Key fields:**
+- `type`: Field data type
+- `description`: Helps model understand what to extract
+- `required`: Fields that must be extracted
+- `enum`: Predefined choices for enum types
+- `items`: Structure for array elements
+
+---
+
+## Field types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `string` | Text | `"John Doe"` |
+| `number` | Numeric | `123.45` |
+| `integer` | Integer only | `42` |
+| `enum` | Predefined choices | One of: `["Paid", "Pending"]` |
+| `object` | Nested fields | `{"name": "...", "addr": "..."}` |
+| `array` | List of items | `[{...}, {...}]` |
+
+**Nesting limits:**
+- Maximum 3 levels of nesting
+- Maximum 100 leaf fields (lowest-level fields)
+
+---
+
+## Common patterns
+
+### Single value
+
+Field appears once in document:
+
+```json
+{
+  "invoice_number": {
+    "type": "string",
+    "description": "Invoice number"
+  }
+}
+```
+
+![Extract V3 Mono Key Jp](/images/extract-v3-mono-key.jpg)
+
+---
+
+### Multiple values
+
+Field has multiple parallel values (not a table):
+
+```json
+{
+  "colors": {
+    "type": "array",
+    "description": "Available colors",
+    "items": {"type": "string"}
+  }
+}
+```
+
+![Extract V3 Multi Value Jp](/images/extract-v3-multi-value.jpg)
+
+![Extract V3 Multi Value Demo Jp](/images/extract-v3-multi-value-demo.jpg)
+
+---
+
+### Table
+
+Multiple rows with repeating structure:
+
+```json
+{
+  "line_items": {
+    "type": "array",
+    "description": "Invoice line items",
+    "items": {
+      "type": "object",
+      "properties": {
+        "description": {"type": "string"},
+        "quantity": {"type": "number"},
+        "price": {"type": "number"}
+      }
+    }
+  }
+}
+```
+
+![Extract V3 Schema Table Sample Jp](/images/extract-v3-schema-table-sample.jpg)
+
+**Multiple tables:** Add multiple array fields
+
+![Extract V3 Schema Multi Table Jp](/images/extract-v3-schema-multi-table.jpg)
+
+---
+
+### Nested object
+
+Related fields grouped together:
+
+```json
+{
+  "vendor": {
+    "type": "object",
+    "description": "Vendor information",
+    "properties": {
+      "name": {"type": "string"},
+      "address": {"type": "string"},
+      "phone": {"type": "string"}
+    }
+  }
+}
+```
+
+![Extract V3 Object Jp](/images/extract-v3-object.jpg)
+
+---
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Best Practices" icon="lightbulb" href="/xparse/extract/best-practices">
+    Tips for better accuracy
+  </Card>
+  
+  <Card title="Quickstart" icon="rocket" href="/xparse/extract/quickstart">
+    Extract your first document
+  </Card>
+  
+  <Card title="Response Format" icon="code" href="/xparse/extract/response-format">
+    Understand the output
+  </Card>
+</CardGroup>

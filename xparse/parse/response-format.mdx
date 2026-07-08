@@ -1,0 +1,525 @@
+---
+title: "Response Format"
+description: "Understand parsing results and how to use them"
+---
+
+Every parsing response returns structured data in a unified format. This guide explains what you get and how to use it.
+
+## Response structure
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "file_id": "doc_7f3a2b",
+    "success_count": 5,
+    "markdown": "# Title\n\nContent...",
+    "elements": [...],
+    "pages": [...],
+    "title_tree": [...]
+  }
+}
+```
+
+### Top-level fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `code` | int | HTTP status code (200 = success) |
+| `message` | string | Status message |
+| `data` | object | Parsing results |
+
+### data fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `schema_version` | string | Data structure version (currently `"1.3.0"`) |
+| `file_id` | string | Unique file identifier (use for caching) |
+| `job_id` | string | Job identifier (for async requests) |
+| `success_count` | int | Successfully parsed pages (billing basis) |
+| `metadata` | object | File metadata (name, type, page count) |
+| `markdown` | string | AI-ready Markdown content |
+| `elements` | array | Structured document elements |
+| `title_tree` | array | Table of contents (requires `title_tree: true`) |
+| `pages` | array | Page metadata (requires `pages: true`) |
+| `summary` | object | Processing time statistics |
+
+---
+
+## Markdown
+
+Clean, structured content ready for LLMs.
+
+```json
+{
+  "markdown": "# Annual Report 2024\n\n## Executive Summary\n\nThis report presents..."
+}
+```
+
+**What's included:**
+- Headings with proper hierarchy (`#`, `##`, `###`)
+- Paragraphs and lists
+- Tables (HTML or Markdown format, see `table_view`)
+- Formulas in LaTeX format
+- Reading order preserved
+
+**Use for:**
+- RAG pipelines
+- LLM input (GPT-4, Claude, etc.)
+- Vector embeddings
+- Search indexing
+- Document summarization
+
+**Example:**
+```python
+markdown = response["data"]["markdown"]
+
+# Send to LLM
+summary = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": f"Summarize: {markdown}"}]
+)
+```
+
+---
+
+## Elements
+
+Structured representation of document content.
+
+```json
+{
+  "elements": [
+    {
+      "element_id": "el_001",
+      "type": "Title",
+      "text": "Annual Report 2024",
+      "page_number": 1,
+      "coordinates": [0.100000, 0.120000, 0.900000, 0.120000, 0.900000, 0.160000, 0.100000, 0.160000]
+    },
+    {
+      "element_id": "el_002",
+      "type": "NarrativeText",
+      "text": "This report presents...",
+      "page_number": 1,
+      "coordinates": [0.100000, 0.180000, 0.900000, 0.180000, 0.900000, 0.250000, 0.100000, 0.250000]
+    }
+  ]
+}
+```
+
+### Base fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `element_id` | string | Unique identifier |
+| `type` | string | Element type (see types below) |
+| `sub_type` | string | Element subtype (optional). Examples: Image → `stamp`, `qrcode`, `barcode`, `chart`; Table → `bordered`, `borderless` |
+| `text` | string | Text content |
+| `page_number` | int | Page number (starts at 1) |
+| `coordinates` | array | Four-point coordinates `[x1, y1, x2, y2, x3, y3, x4, y4]` normalized to [0,1] (top-left, top-right, bottom-right, bottom-left) |
+| `metadata` | object | Element metadata (see below) |
+| `objects` | array | Inline objects (requires `include_inline_objects: true`) |
+| `table_structure` | object | Table structure (Table elements only, requires `include_table_structure: true`) |
+| `char_details` | array | Character-level details (requires `include_char_details: true`) |
+| `image_data` | object | Image data (Image elements only, requires `include_image_data: true`) |
+
+### Element types
+
+| Type | Description |
+|------|-------------|
+| `Title` | Heading |
+| `NarrativeText` | Body paragraph |
+| `ListItem` | List item |
+| `Table` | Table |
+| `TableCaption` | Table caption |
+| `Image` | Image |
+| `FigureCaption` | Image caption |
+| `Formula` | Math formula (LaTeX format) |
+| `Chemical` | Chemical formula |
+| `Header` | Page header |
+| `Footer` | Page footer |
+| `PageNumber` | Page number |
+| `PageBreak` | Page break |
+| `CodeSnippet` | Code snippet |
+| `UncategorizedText` | Uncategorized text |
+
+**Use for:**
+- Layout analysis
+- Visual grounding (match text to image regions)
+- Citations with coordinates
+- Content extraction by type
+- Building visual overlays
+
+**Example: Find all tables**
+```python
+tables = [el for el in elements if el["type"] == "Table"]
+```
+
+---
+
+## Coordinates
+
+Bounding boxes for visual positioning.
+
+### Coordinate system
+
+Coordinates use four-point representation with eight values:
+
+```
+coordinates: [x1, y1, x2, y2, x3, y3, x4, y4]
+```
+
+The four points follow this order:
+
+```
+(x1,y1) -------- (x2,y2)
+   |                |
+   |  Element Area  |
+   |                |
+(x4,y4) -------- (x3,y3)
+```
+
+Each coordinate value is normalized to `[0, 1]` range (rounded to 6 decimal places), representing the proportion relative to page dimensions.
+
+### Convert to pixels
+
+```python
+# Get page dimensions from pages array
+page_width, page_height = 1576, 1683
+
+# Convert normalized coordinates to pixels
+# Top-left point
+x1_px = coordinates[0] * page_width
+y1_px = coordinates[1] * page_height
+
+# Top-right point  
+x2_px = coordinates[2] * page_width
+y2_px = coordinates[3] * page_height
+
+# Bottom-right point
+x3_px = coordinates[4] * page_width
+y3_px = coordinates[5] * page_height
+
+# Bottom-left point
+x4_px = coordinates[6] * page_width
+y4_px = coordinates[7] * page_height
+```
+
+**Use for:**
+- Drawing bounding boxes on images
+- Source citations with visual links
+- Interactive document viewers
+- Precise element positioning
+
+---
+
+## Tables
+
+Tables can be returned in multiple formats.
+
+### table_structure (JSON format)
+
+Enable with `include_table_structure: true`.
+
+```json
+{
+  "type": "Table",
+  "text": "| Name | Age |\n|---|---|\n| John | 28 |",
+  "table_structure": {
+    "rows": 2,
+    "cols": 2,
+    "cells": [
+      {
+        "cell_id": "tbl_001_r1_c1",
+        "row": 1,
+        "col": 1,
+        "row_span": 1,
+        "col_span": 1,
+        "content_type": "text",
+        "text": "Name",
+        "coordinates": [0.100000, 0.300000, 0.300000, 0.300000, 0.300000, 0.340000, 0.100000, 0.340000]
+      }
+    ]
+  }
+}
+```
+
+**Cell fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cell_id` | string | Unique cell identifier |
+| `row` | int | Row index (starts at 1) |
+| `col` | int | Column index (starts at 1) |
+| `row_span` | int | Rows spanned (for merged cells) |
+| `col_span` | int | Columns spanned (for merged cells) |
+| `content_type` | string | `text`, `formula`, `image`, `mixed` |
+| `text` | string | Cell content |
+| `coordinates` | array | Cell bounding box (four-point coordinates) |
+| `image_datas` | array | Image data array (when `content_type` is `image`, requires `include_image_data`) |
+| `objects` | array | Embedded objects in cell (requires `include_inline_objects`) |
+| `char_details` | array | Character-level details (requires `include_char_details`) |
+
+**Use for:**
+- Programmatic table processing
+- Database imports
+- Extracting specific cells
+- Financial report analysis
+
+**Example: Extract first column**
+```python
+table = element["table_structure"]
+first_col = [cell["text"] for cell in table["cells"] if cell["col"] == 1]
+```
+
+---
+
+## Pages
+
+Page metadata and element mapping.
+
+Enable with `pages: true`.
+
+```json
+{
+  "pages": [
+    {
+      "page_number": 1,
+      "page_width": 1576,
+      "page_height": 1683,
+      "page_image_url": "https://example.com/page-1.jpg",
+      "element_ids": ["el_001", "el_002", "el_003"],
+      "dpi": 144,
+      "angle": 0
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `page_number` | int | Page number |
+| `page_width` | int | Width in pixels |
+| `page_height` | int | Height in pixels |
+| `page_image_url` | string | Rendered page image URL |
+| `element_ids` | array | Elements on this page (in reading order) |
+| `dpi` | int | Resolution used for rendering |
+| `angle` | int | Rotation angle (0, 90, 180, 270) |
+
+**Use for:**
+- Page-level citations
+- Document preview generation
+- Converting coordinates to pixels
+- Page-by-page processing
+
+---
+
+## Title tree
+
+Hierarchical table of contents.
+
+Enable with `title_tree: true`.
+
+```json
+{
+  "title_tree": [
+    {
+      "element_id": "el_001",
+      "title": "Chapter 1: Introduction",
+      "level": 1,
+      "page_number": 1,
+      "children": [
+        {
+          "element_id": "el_005",
+          "title": "1.1 Background",
+          "level": 2,
+          "page_number": 2,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `element_id` | string | ID of the Title element |
+| `title` | string | Heading text |
+| `level` | int | Heading level (1 = top level) |
+| `page_number` | int | Page where heading appears |
+| `children` | array | Nested child headings |
+
+**Use for:**
+- Document navigation UI
+- Section-based chunking for RAG
+- Generating table of contents
+- Understanding document structure
+
+---
+
+## Hierarchical relationships
+
+Enable with `include_hierarchy: true` (default).
+
+Elements include relationship fields in `metadata`:
+
+```json
+{
+  "element_id": "el_001",
+  "type": "Title",
+  "metadata": {
+    "parent_id": null,
+    "children_ids": ["el_002", "el_003"],
+    "category_depth": 0,
+    "is_continuation": false,
+    "has_inline_objects": false,
+    "width": 800,
+    "height": 600
+  }
+}
+```
+
+### metadata fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `parent_id` | string | Parent element ID (null for root) |
+| `children_ids` | array | List of child element IDs |
+| `category_depth` | int | Nesting level for same-type elements (e.g., Title: 0=H1, 1=H2) |
+| `ref_element_id` | string | Referenced element ID (for captions linking to tables/images) |
+| `is_continuation` | boolean | Whether element continues from previous page |
+| `continuation_of` | string | Element ID of the previous part (when `is_continuation=true`) |
+| `has_inline_objects` | boolean | Whether element contains inline objects (requires `include_inline_objects: true`) |
+| `inline_object_types` | array | Types of inline objects, e.g., `["formula", "handwriting"]` |
+| `width` | int | Image width in pixels (Image elements only) |
+| `height` | int | Image height in pixels (Image elements only) |
+| `data_source` | object | Data source details (see structure below) |
+
+**data_source structure:**
+
+```json
+{
+  "record_locator": {
+    "protocol": "file",
+    "remote_file_path": "/path/to/document.pdf"
+  },
+  "url": "file:///path/to/document.pdf"
+}
+```
+
+**Use for:**
+- Building content trees
+- Preserving context in RAG chunks
+- Understanding document structure
+- Associating captions with tables/images
+- Handling cross-page elements
+
+---
+
+## Common patterns
+
+### Build citations
+
+```python
+def build_citation(element):
+    return {
+        "text": element["text"],
+        "page": element["page_number"],
+        "bbox": element["coordinates"]
+    }
+
+citations = [build_citation(el) for el in elements]
+```
+
+### Extract all tables
+
+```python
+tables = [
+    el for el in elements 
+    if el["type"] == "Table"
+]
+
+# Get table content
+for table in tables:
+    if "table_structure" in table:
+        rows = table["table_structure"]["rows"]
+        cols = table["table_structure"]["cols"]
+        print(f"Table: {rows}x{cols}")
+```
+
+### Find text on specific page
+
+```python
+page_2_elements = [
+    el for el in elements 
+    if el["page_number"] == 2
+]
+```
+
+### Get formulas
+
+```python
+formulas = [
+    el for el in elements 
+    if el["type"] == "Formula"
+]
+
+# Or inline formulas (requires include_inline_objects: true)
+inline_formulas = []
+for el in elements:
+    if "objects" in el:
+        inline_formulas.extend([
+            obj for obj in el["objects"] 
+            if obj["type"] == "formula"
+        ])
+```
+
+---
+
+## Error handling
+
+When `code` is not 200, the request failed:
+
+```json
+{
+  "code": 40004,
+  "message": "Parameter error",
+  "location": {
+    "stage": "parse",
+    "page_number": 3
+  }
+}
+```
+
+### Common error codes
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| 40101 | Missing credentials | Include `x-ti-app-id` and `x-ti-secret-code` headers |
+| 40102 | Invalid credentials | Verify credentials in console |
+| 40302 | File too large | Use async API or reduce file size |
+| 40423 | Wrong password | Check PDF password |
+| 40424 | Invalid page range | Verify `page_range` parameter |
+
+See [API Reference](/api-reference/endpoint/xparse/v1/parse-sync) for complete error code list.
+
+---
+
+## Related resources
+
+<CardGroup cols={3}>
+  <Card title="Quickstart" icon="rocket" href="/xparse/v1/quickstart">
+    Parse your first document
+  </Card>
+
+  <Card title="Configuration" icon="sliders" href="/xparse/v1/configuration">
+    Control what data is returned
+  </Card>
+
+  <Card title="Examples" icon="book-open" href="/xparse/v1/examples">
+    See response format in action
+  </Card>
+</CardGroup>
