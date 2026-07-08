@@ -7,12 +7,12 @@ description: "Convert documents into structured data for AI and automation"
 
 xParse turns PDFs, images, and Office documents into structured data. Get clean Markdown for LLMs, extract specific fields with JSON Schema, or retrieve document elements with coordinates.
 
----
+Perfect for RAG pipelines, document automation, and data extraction workflows.
 
 ## Choose your workflow
 
 <CardGroup cols={2}>
-  <Card title="Parse" icon="file-lines" href="/xparse/v1/quickstart">
+  <Card title="Parse" icon="file-lines" href="/xparse/parse/quickstart">
     Convert entire documents into Markdown and JSON. Preserves structure—headings, tables, formulas, reading order—so your LLM gets clean, organized input.
     
     **Use when you need:**
@@ -21,7 +21,7 @@ xParse turns PDFs, images, and Office documents into structured data. Get clean 
     - Tables, images, and formulas preserved
   </Card>
   
-  <Card title="Extract" icon="table" href="/xparse/extract-quickstart-v3">
+  <Card title="Extract" icon="table" href="/xparse/extract/quickstart">
     Pull out just the data you need. Define your schema, get structured JSON back. No parsing the whole document—just your invoice totals, form fields, or table rows.
     
     **Use when you need:**
@@ -31,42 +31,21 @@ xParse turns PDFs, images, and Office documents into structured data. Get clean 
   </Card>
 </CardGroup>
 
----
+## What you can process
 
-## How it works
+**Input formats:** PDF, images (PNG, JPG, WebP, BMP, TIFF), Word, Excel, PowerPoint, HTML, TXT, OFD, RTF
 
-```mermaid
-graph LR
-    A[Document] --> B[Parse]
-    B --> C[Markdown / JSON]
-    C --> D[Extract]
-    D --> E[Structured Data]
-    
-    style A fill:#f5f5f5
-    style B fill:#1a66ff,color:#fff
-    style C fill:#f5f5f5
-    style D fill:#1a66ff,color:#fff
-    style E fill:#f5f5f5
-```
+**Parse returns:**
+- Markdown with preserved reading order
+- Structured elements (headings, paragraphs, tables, images)
+- Pixel coordinates for every element
+- Tables with row/column structure
+- Images, formulas, handwriting, form fields
 
-1. **Upload** your document (PDF, image, Office file)
-2. **Parse** converts it to Markdown and structured JSON
-3. **Extract** pulls specific data using your schema (optional)
-4. **Use** the structured output in your application
-
----
-
-## Supported formats
-
-- **PDF** — Digital or scanned
-- **Images** — PNG, JPEG, WebP, BMP, TIFF
-- **Word** — DOC, DOCX
-- **Excel** — XLS, XLSX, CSV
-- **PowerPoint** — PPT, PPTX
-- **HTML** — HTML, MHTML
-- **Text** — TXT, RTF, OFD
-
-See [Supported Files & Limits](/xparse/supported-files) for detailed requirements.
+**Extract returns:**
+- JSON matching your schema
+- Source citations with page numbers and bounding boxes
+- Field-level confidence and coordinates
 
 ## Common use cases
 
@@ -76,20 +55,28 @@ See [Supported Files & Limits](/xparse/supported-files) for detailed requirement
 - Pull form fields from scanned documents
 - Process receipts at scale
 
----
-
 ## Get started
 
+<CardGroup cols={2}>
+  <Card title="Try the web app" icon="browser" href="https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown">
+    Upload a file and see results instantly
+  </Card>
+  
+  <Card title="Start with the API" icon="code" href="/xparse/parse/quickstart">
+    5-minute quickstart with Python or REST
+  </Card>
+</CardGroup>
+
+## Next steps
+
 <CardGroup cols={3}>
-  <Card title="Get credentials" icon="key" href="/xparse/authentication">
-    Sign up and get your API keys
+  <Card title="Get API credentials" icon="key" href="/xparse/authentication">
+    Sign up and grab your keys
   </Card>
-  
   <Card title="Parse a document" icon="file-code" href="/xparse/parse/quickstart">
-    Convert document to Markdown
+    Full document → Markdown + JSON
   </Card>
-  
-  <Card title="Extract data" icon="table-cells" href="/xparse/extract/quickstart">
-    Pull specific fields with schema
+  <Card title="Extract specific fields" icon="table-cells" href="/xparse/extract/quickstart">
+    Define schema → get structured data
   </Card>
 </CardGroup>
