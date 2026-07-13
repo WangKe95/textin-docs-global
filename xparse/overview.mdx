@@ -5,47 +5,53 @@ description: "Convert documents into structured data for AI and automation"
 
 ## What is xParse?
 
-xParse turns PDFs, images, and Office documents into structured data. Get clean Markdown for LLMs, extract specific fields with JSON Schema, or retrieve document elements with coordinates.
+xParse converts PDFs, images, and Office files into Markdown and structured JSON.
 
-Perfect for RAG pipelines, document automation, and data extraction workflows.
+Use Parse to preserve full document content and structure, including headings, tables, formulas, reading order, and element coordinates. Use Extract to return specific fields that match your JSON Schema.
+
+xParse is designed for RAG pipelines, document automation, and structured data extraction.
 
 ## Choose your workflow
 
 <CardGroup cols={2}>
   <Card title="Parse" icon="file-lines" href="/xparse/parse/quickstart">
-    Convert entire documents into Markdown and JSON. Preserves structure—headings, tables, formulas, reading order—so your LLM gets clean, organized input.
+    Convert full documents into Markdown and structured JSON while preserving headings, tables, formulas, reading order, and element coordinates.
     
-    **Use when you need:**
+    **Use Parse when you need:**
     - Full document content for RAG or search
-    - Structured elements with coordinates
-    - Tables, images, and formulas preserved
+    - Structured document elements with coordinates
+    - Preserved tables, images, and formulas
   </Card>
   
   <Card title="Extract" icon="table" href="/xparse/extract/quickstart">
-    Pull out just the data you need. Define your schema, get structured JSON back. No parsing the whole document—just your invoice totals, form fields, or table rows.
+    Extract only the fields you need and return structured JSON that matches your schema.
     
-    **Use when you need:**
-    - Specific fields from forms or invoices
-    - Data formatted for your database
-    - Fast extraction without full parsing
+    **Use Extract when you need:**
+    - Specific fields from forms, invoices, or other business documents
+    - Structured data that matches your application schema
+    - Targeted output instead of full document content
   </Card>
 </CardGroup>
 
 ## What you can process
 
-**Input formats:** PDF, images (PNG, JPG, WebP, BMP, TIFF), Word, Excel, PowerPoint, HTML, TXT, OFD, RTF
+**Supported input formats**
+
+**Documents:** PDF, Word, Excel, PowerPoint, HTML, TXT, OFD, and RTF
+
+**Images:** PNG, JPEG, WebP, BMP, and TIFF
 
 **Parse returns:**
 - Markdown with preserved reading order
-- Structured elements (headings, paragraphs, tables, images)
-- Pixel coordinates for every element
-- Tables with row/column structure
-- Images, formulas, handwriting, form fields
+- Structured document elements
+- Coordinates for each element
+- Tables with preserved row and column structure
+- Structured output for images, formulas, handwriting, and form fields
 
 **Extract returns:**
 - JSON matching your schema
 - Source citations with page numbers and bounding boxes
-- Field-level confidence and coordinates
+- Optional confidence scores and source coordinates
 
 ## Common use cases
 

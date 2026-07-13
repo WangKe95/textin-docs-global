@@ -1,73 +1,67 @@
 ---
 title: "Authentication"
-description: "Get your API credentials and authenticate requests"
+description: "Get your API credentials and authenticate API requests."
 ---
 
-## Authentication overview
+## How authentication works
 
-TextIn API requests are authenticated with an App ID and Secret Code sent in the request headers:
+Include your App ID and Secret Code in every API request:
 
 ```
 x-ti-app-id: YOUR_APP_ID
 x-ti-secret-code: YOUR_SECRET_CODE
 ```
 
----
-
-## Get credentials
+## Get your credentials
 
 <Steps>
-  <Step title="Open the console">
-    Go to [Account & Developer Info](https://www.textin.ai/console/dashboard/setting) in the TextIn console.
+  <Step title="Sign in to the TextIn console">
+    Sign in to your [TextIn account](https://www.textin.ai/console/dashboard/setting).
   </Step>
 
-  <Step title="Locate your credentials">
-    Sign in to the TextIn console, click your profile icon in the bottom-left corner, and select **Account & Developer Info**.
+  <Step title="Open Account & Developer Info">
+    Click your profile icon in the bottom-left corner, then select **Account & Developer Info**.
 
     ![AP Ikey 1 Pn](/images/APIkey-1.png)
   </Step>
 
   <Step title="Copy your credentials">
-    Click the **Copy** icon to copy your `x-ti-app-id` and `x-ti-secret-code`.
+    Copy your App ID and Secret Code. Use them in the `x-ti-app-id` and `x-ti-secret-code` request headers.
 
     ![AP Ikey Jp](/images/APIkey.jpg)
   </Step>
 </Steps>
 
----
+## Verify your credentials
 
-## Make your first request
-
-Test your credentials with a simple cURL request:
+Send a test request:
 
 ```bash
 curl -X POST "https://api.textin.com/api/v1/xparse/parse/sync" \
   -H "x-ti-app-id: YOUR_APP_ID" \
   -H "x-ti-secret-code: YOUR_SECRET_CODE" \
-  -F "file_url=https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf"
+  -F "file_url=https://..."
 ```
 
-A successful response returns `"code": 200` with parsed document data.
+If authentication succeeds, the response body includes `"code": 200` and the parsed document data.
 
----
+## Use environment variables
 
-## Environment variables
+To avoid hardcoding credentials, store them in environment variables.
 
-Set credentials as environment variables for easier use:
-
-**Linux/Mac:**
+**macOS and Linux**
 ```bash
 export TEXTIN_APP_ID="your-app-id"
 export TEXTIN_SECRET_CODE="your-secret-code"
 ```
 
-**Windows (PowerShell):**
+**Windows PowerShell**
 ```powershell
 $env:TEXTIN_APP_ID="your-app-id"
 $env:TEXTIN_SECRET_CODE="your-secret-code"
 ```
 
-Then use in your code:
+The following examples read credentials from these environment variables.
 
 <Tabs>
   <Tab title="cURL">
@@ -105,14 +99,12 @@ Then use in your code:
   </Tab>
 </Tabs>
 
----
+## Keep credentials secure
 
-## Store credentials securely
-
-- **Don't commit** credentials to Git or version control
-- **Don't expose** them in browser or client-side code
-- **Use environment variables** or a secret manager in production
-- **Regenerate credentials** if you suspect a leak (contact support for help)
+- Never commit credentials to version control.
+- Keep credentials on the server. Do not expose them in client-side code.
+- Use environment variables or a secret manager in production.
+- Contact TextIn support immediately if you believe your credentials have been exposed.
 
 ---
 
@@ -122,7 +114,7 @@ Then use in your code:
 |------------|-------------|----------|
 | 40101 | `x-ti-app-id` or `x-ti-secret-code` is missing | Include both headers in your request |
 | 40102 | `x-ti-app-id` or `x-ti-secret-code` is invalid | Verify your credentials in the [console](https://www.textin.ai/console/dashboard/setting) |
-| 40103 | Client IP not in whitelist | Add your IP to the whitelist in console settings |
+| 40103 | Client IP not in IP allowlist | Add your IP to the IP allowlist in console settings |
 
 <Tip>
   If you continue to see authentication errors after verifying your credentials, contact [TextIn support](https://www.textin.ai/contact) for assistance.
@@ -134,14 +126,14 @@ Then use in your code:
 
 <CardGroup cols={3}>
   <Card title="Parse Quickstart" icon="file-code" href="/xparse/parse/quickstart">
-    Convert document to Markdown
+    Parse a document into Markdown and structured JSON.
   </Card>
   
   <Card title="Extract Quickstart" icon="table-cells" href="/xparse/extract/quickstart">
-    Pull specific fields with schema
+    Extract structured data using JSON Schema.
   </Card>
   
-  <Card title="Supported Files" icon="file" href="/xparse/supported-files">
-    File formats and limits
+  <Card title="Supported Files & Limits" icon="file" href="/xparse/supported-files">
+    Review supported formats, file sizes, and processing limits.
   </Card>
 </CardGroup>

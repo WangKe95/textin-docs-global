@@ -1,171 +1,151 @@
 ---
 title: "Supported Files & Limits"
-description: "File formats, size limits, and recommended usage"
+description: "Review supported file types, input requirements, processing limits, and concurrency limits for xParse."
 ---
 
-## Supported formats
+## Supported file types
 
-| Format | Parse | Extract | Extensions |
-|--------|-------|---------|------------|
-| PDF | ✓ | ✓ | `.pdf` |
-| Images | ✓ | ✓ | `.png`, `.jpg`, `.jpeg`, `.webp`, `.bmp`, `.tiff` |
-| Word | ✓ | ✓ | `.doc`, `.docx` |
-| Excel | ✓ | ✓ | `.xls`, `.xlsx`, `.csv` |
-| PowerPoint | ✓ | ✓ | `.ppt`, `.pptx` |
-| HTML | ✓ | ✓ | `.html`, `.mhtml` |
-| Text | ✓ | ✓ | `.txt`, `.rtf` |
-| OFD | ✓ | ✓ | `.ofd` |
+Both Parse and Extract support the following file types.
 
----
-
-## File limits
-
-### Sync API
-
-| Limit | Value |
-|-------|-------|
-| **Max file size** | 500MB |
-| **Max pages** | 500 pages |
-| **Timeout** | 2 minutes |
-
-### Async API
-
-| Limit | Value |
-|-------|-------|
-| **Max file size** | 500MB |
-| **Max pages** | 2,000 pages (paid), 5,000 pages (enterprise) |
-| **Timeout** | 30 minutes |
-
----
+| File type | Supported extensions |
+| --- | --- |
+| PDF | `.pdf` |
+| Images | `.png`, `.jpg`, `.jpeg`, `.webp`, `.bmp`, `.tiff` |
+| Word | `.doc`, `.docx` |
+| Excel | `.xls`, `.xlsx`, `.csv` |
+| PowerPoint | `.ppt`, `.pptx` |
+| HTML | `.html`, `.mhtml` |
+| Text documents | `.txt`, `.rtf` |
+| OFD | `.ofd` |
 
 ## Image requirements
 
-**Resolution:**
-- For images with aspect ratio < 2: Width and height must be between 20-20,000 pixels
-- For other images: Width and height must be between 20-10,000 pixels
+### Image dimensions
 
-**Supported formats:**
-- PNG, JPEG, WebP, BMP, TIFF
+Aspect ratio is calculated by dividing the longer side of the image by the shorter side.
 
-**Quality tips:**
-- Higher resolution = better accuracy
-- Minimum 144 DPI for scanned documents
-- Avoid heavily compressed images
+| Image aspect ratio | Allowed dimensions |
+| --- | --- |
+| Below 2 | Width and height must each be between 20 and 20,000 pixels |
+| 2 or greater | Width and height must each be between 20 and 10,000 pixels |
 
----
+### Supported image formats
+
+PNG, JPEG, WebP, BMP, and TIFF are supported.
+
+### Image quality recommendations
+
+For more reliable recognition results:
+
+- Use clear images with text that is legible at the original image size.
+- Avoid heavy compression, motion blur, glare, and low contrast.
+- Keep the full document page visible whenever possible.
+- Rotate images to the correct orientation before uploading.
+- Use `crop_dewarp` when photographed pages are skewed, curved, or distorted.
 
 ## PDF requirements
 
-**Digital PDFs:**
-- Processed faster using text extraction mode
-- Tables and layouts preserved accurately
+### Digital PDFs
 
-**Scanned PDFs:**
-- OCR applied automatically
-- Use `crop_dewarp: true` for skewed pages
-- Use `remove_watermark: true` to improve accuracy
+When embedded text is available, xParse can extract it directly instead of applying OCR to the entire page.
 
-**Password-protected PDFs:**
-- Supported with password parameter
-- See [Configuration](/xparse/v1/configuration#password)
+Digital PDFs generally provide:
 
----
+- Faster processing
+- More reliable text extraction
+- Better preservation of text order and document structure
+
+The quality of tables and layouts may still vary depending on how the PDF was generated.
+
+### Scanned PDFs
+
+OCR is applied automatically to image-based or scanned pages.
+
+Use optional preprocessing settings only when they match the document:
+
+- Enable `crop_dewarp` for rotated, curved, or skewed pages.
+- Enable `remove_watermark` when visible watermarks interfere with text recognition.
+- Use `parse_mode: "scan"` only when embedded text is unavailable or unreliable and you want OCR to process every page.
+
+### Password-protected PDFs
+
+Password-protected PDFs are supported.
+
+Pass the document password using the `password` parameter. See [Parse Configuration](/xparse/parse/configuration) for details.
 
 ## Office documents
 
-**Word (.doc, .docx):**
-- Converted to PDF internally
-- Formatting preserved
-- Processing time: +5-10 seconds
+Office files are converted or normalized before parsing. This may add processing time compared with a PDF or image of similar size.
 
-**Excel (.xls, .xlsx, .csv):**
-- Each sheet treated as a separate page
-- Tables extracted with structure
-- Formulas preserved as text
+| File type | Processing behavior |
+| --- | --- |
+| Word | The document is converted before parsing. Most text, images, and layout information are preserved when possible. |
+| Excel | Each worksheet is processed separately. Tables retain row, column, and cell information when table structure is enabled. Formulas may be returned as text. |
+| PowerPoint | Each slide is processed as a separate page. Text and images are included in the output. Speaker notes are included when available. |
 
-**PowerPoint (.ppt, .pptx):**
-- Each slide becomes one page
-- Text and images extracted
-- Speaker notes included
+Complex Office files with many embedded objects, external links, macros, or unsupported elements may take longer to process or fail during requests.
 
-<Info>
-  **Office conversion timeout:** Complex documents with many embedded objects may timeout. Simplify the document or split into smaller files if conversion fails.
-</Info>
+If request fails:
 
----
+1. Remove unnecessary embedded objects.
+2. Save the file in a newer Office format.
+3. Export the document as PDF.
+4. Split the document into smaller files.
 
-## Recommended usage
+## Processing limits
 
-### Choose Sync vs Async
+Processing limits vary by account type, processing mode, and API type.
 
-```
-Documents < 50 pages
-File size < 10MB
-Need immediate result
-→ Use Sync API
-```
+- **Page and file size limits** determine whether a document can be submitted through the synchronous or asynchronous API.
+- **Concurrency limits** determine how many Parse or Extract jobs can run at the same time.
+- **Processing time limit** is the maximum amount of time allowed for a single request or job.
 
-```
-Documents > 50 pages
-File size > 10MB
-Batch processing
-→ Use Async API
-```
+| Account type | Maximum pages per synchronous request | Maximum pages per asynchronous job | Maximum file size per request or job | Parse concurrency | Extract concurrency |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Free | 100 | 100 | 100 MB | 1 | 1 |
+| Paid | 500 | 2,000 | 500 MB | 5 | 2 |
+| Enterprise | 500 | 5,000 | 500 MB | 10+ | 5 |
 
-See [Async Processing](/xparse/v1/async-processing) for details.
+All synchronous requests and asynchronous jobs have a maximum processing time of **10 minutes**.
 
----
+### How the limits are applied
 
-### Optimize for accuracy
+- **Maximum pages** is the number of pages allowed in a single synchronous request or asynchronous job.
+- **Maximum file size** is the size of the uploaded file before processing.
+- **Concurrency** is the maximum number of jobs that can be processed at the same time.
+- Requests submitted after the concurrency limit is reached may be queued or rejected, depending on the endpoint and account configuration.
+- Enterprise Parse concurrency can be increased beyond 10 based on workload requirements and the service agreement.
 
-**For scanned documents:**
-- Use 144-216 DPI resolution
-- Enable `crop_dewarp: true`
-- Enable `remove_watermark: true`
+### When a document exceeds a limit
 
-**For complex layouts:**
-- Use `parse_mode: "scan"` to force OCR
-- Enable `include_table_structure: true`
-- Enable `include_hierarchy: true` for better structure
+If a document exceeds the page or file size limit:
 
-**For financial documents:**
-- Enable `include_table_structure: true`
-- Use `table_view: "html"` for complex tables
-- Enable `include_inline_objects: true` for formulas
+1. Use the `page_range` parameter to process selected page ranges separately.
+2. Use the asynchronous API when the document exceeds the synchronous page limit.
+3. Split the document into smaller files when it exceeds the asynchronous page limit or the 500 MB file size limit.
+4. Upgrade your plan or contact TextIn support if you need higher page or concurrency limits.
 
-See [Configuration](/xparse/v1/configuration) for all options.
+### Choose between synchronous and asynchronous processing
 
----
+Use the synchronous API when:
 
-## Rate limits
+- The document is within the synchronous page and file size limits.
+- You need the result returned in the same request.
+- The document is expected to finish processing as soon as possible.
 
-| Tier | QPS | Concurrent Jobs |
-|------|-----|----------------|
-| Free | 2 | 5 |
-| Standard | 5 | 10 |
-| Professional | 10 | 20 |
-| Enterprise | Custom | 50+ |
+Use the asynchronous API when:
 
-<Info>
-  **Need higher limits?** Contact [support](https://www.textin.com/contact?type=28) to increase your QPS or page quota.
-</Info>
+- The document exceeds the synchronous page limit.
+- You are processing large or complex documents.
+- You are submitting multiple documents in batches.
+- You want to retrieve the result later through polling or a callback.
 
-See [Rate Limits](/api-reference/endpoint/xparse/v1/rate-limits) for details.
-
----
+> The asynchronous API supports more pages per job, but it does not increase the 500 MB file size limit or the 10-minute processing time limit.
 
 ## Related resources
 
-<CardGroup cols={3}>
-  <Card title="Parse Quickstart" icon="rocket" href="/xparse/v1/quickstart">
-    Parse your first document
-  </Card>
-  
-  <Card title="Configuration" icon="sliders" href="/xparse/v1/configuration">
-    Optimize parsing settings
-  </Card>
-  
-  <Card title="Errors" icon="triangle-exclamation" href="/api-reference/endpoint/xparse/v1/errors">
-    Troubleshoot file errors
-  </Card>
-</CardGroup>
+- [Authentication](/xparse/authentication)
+- [Parse Quickstart](/xparse/parse/quickstart)
+- [Extract Quickstart](/xparse/extract/quickstart)
+- [Parse Configuration](/xparse/parse/configuration)
+- [Async Processing](/xparse/parse/async-processing)

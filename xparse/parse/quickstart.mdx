@@ -1,13 +1,31 @@
 ---
-title: "Quickstart"
-description: "Parse your first document in 5 minutes"
+title: "Parse Quickstart"
+description: "Convert documents into Markdown and structured JSON in 5 minutes"
 ---
 
-Parse a document and get AI-ready Markdown in minutes.
+Parse converts entire documents into clean, structured data—Markdown for LLMs and JSON elements with coordinates for visual grounding.
 
-<Tip>
-  **Recommended:** Use Python SDK for fastest setup. For REST API, see examples below.
-</Tip>
+## What you'll get
+
+<CardGroup cols={2}>
+  <Card title="Markdown" icon="file-lines">
+    Clean, AI-ready text with preserved structure—headings, paragraphs, tables, formulas, and reading order.
+  </Card>
+  
+  <Card title="Structured Elements" icon="cube">
+    JSON array of document components with types, page numbers, and bounding box coordinates.
+  </Card>
+</CardGroup>
+
+**Use Parse for:**
+- RAG pipelines and vector embeddings
+- LLM input (GPT-4, Claude, etc.)
+- Search indexing and knowledge bases
+- Document Q&A with visual grounding
+
+**When to use Parse vs Extract:**
+- **Parse:** You need full document content with preserved structure
+- **Extract:** You only need specific fields (invoice totals, form data, etc.)
 
 ## Before you start
 
@@ -20,9 +38,7 @@ Parse a document and get AI-ready Markdown in minutes.
   **Page limits:** Sync API (500 pages), Async API (2000+ pages)
 </Info>
 
----
-
-## Install SDK
+## Parse your first document
 
 <Tabs>
   <Tab title="Python">
@@ -46,6 +62,10 @@ Parse a document and get AI-ready Markdown in minutes.
     
     # Get Markdown
     print(result.markdown)
+    
+    # Access structured elements
+    for element in result.elements:
+        print(f"{element.type}: {element.text[:50]}")
     ```
   </Tab>
 
@@ -82,66 +102,136 @@ Parse a document and get AI-ready Markdown in minutes.
     
     // Get Markdown
     console.log(result.markdown);
+    
+    // Access structured elements
+    result.elements.forEach(element => {
+      console.log(`${element.type}: ${element.text.substring(0, 50)}`);
+    });
     ```
   </Tab>
 </Tabs>
 
----
+## Understanding the output
 
-## View result
+### Markdown
 
-The API returns clean Markdown with preserved document structure:
+Clean, structured content ready for LLMs:
 
 ```markdown
 # Annual Report 2024
 
 ## Executive Summary
 
-This report presents...
+This report presents our key achievements...
+
+### Financial Highlights
+
+| Metric | 2024 | 2023 |
+|--------|------|------|
+| Revenue | $1.2M | $950K |
+| Profit | $340K | $280K |
 ```
 
-**Use the Markdown for:**
-- RAG pipelines and vector embeddings
-- LLM input (GPT-4, Claude, etc.)
-- Search indexing
-- Document Q&A systems
+**Preserved elements:**
+- Heading hierarchy (`#`, `##`, `###`)
+- Paragraphs and lists
+- Tables (HTML or Markdown format)
+- Formulas in LaTeX
+- Reading order
 
----
+### Structured Elements
 
-## What's included
+JSON array of document components:
 
-<CardGroup cols={2}>
-  <Card title="Markdown" icon="file-lines">
-    Clean, structured content ready for LLMs
-  </Card>
-  
-  <Card title="Structured Elements" icon="cube">
-    JSON elements with types and coordinates
-  </Card>
-  
-  <Card title="Tables" icon="table">
-    HTML, Markdown, or structured JSON format
-  </Card>
-  
-  <Card title="Coordinates" icon="location-dot">
-    Bounding boxes for visual grounding
-  </Card>
-</CardGroup>
+```json
+{
+  "elements": [
+    {
+      "type": "Title",
+      "text": "Annual Report 2024",
+      "page_number": 1,
+      "coordinates": [[0.1, 0.1], [0.9, 0.1], [0.9, 0.15], [0.1, 0.15]]
+    },
+    {
+      "type": "Table",
+      "text": "| Metric | 2024 | 2023 |...",
+      "page_number": 2,
+      "coordinates": [[0.2, 0.3], [0.8, 0.3], [0.8, 0.6], [0.2, 0.6]]
+    }
+  ]
+}
+```
 
----
+**Element types:**
+- `Title`, `NarrativeText`, `ListItem`
+- `Table`, `TableCaption`
+- `Image`, `ImageCaption`
+- `Formula`, `PageHeader`, `PageFooter`
+
+**Coordinates:**
+- Four-point bounding boxes for every element
+- Normalized to [0,1] range
+- Convert to pixels with page dimensions
+
+## Common use cases
+
+### RAG pipelines
+
+```python
+# Parse document
+result = client.parse.run(file=f, filename="knowledge_base.pdf")
+markdown = result.markdown
+
+# Send to LLM
+response = openai.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": f"Summarize: {markdown}"}]
+)
+```
+
+### Document Q&A with citations
+
+```python
+# Parse with coordinates
+result = client.parse.run(file=f, filename="contract.pdf")
+
+# Build citations
+for element in result.elements:
+    if "termination" in element.text.lower():
+        print(f"Found on page {element.page_number}")
+        print(f"Coordinates: {element.coordinates}")
+```
+
+### Knowledge base with table of contents
+
+```python
+from xparse_client import ParseConfig, Capabilities
+
+# Get document structure
+config = ParseConfig(capabilities=Capabilities(title_tree=True))
+result = client.parse.run(file=f, config=config)
+
+# Build table of contents
+for heading in result.title_tree:
+    print(f"{'  ' * heading.level}{heading.title} (p.{heading.page_number})")
+```
 
 ## Next steps
 
 <CardGroup cols={3}>
   <Card title="Configuration" icon="sliders" href="/xparse/parse/configuration">
-    Control parsing behavior
+    Control parsing behavior with options like table format, image extraction, and preprocessing
   </Card>
   
   <Card title="Response Format" icon="code" href="/xparse/parse/response-format">
-    Understand the output structure
+    Detailed documentation of output structure and element types
+  </Card>
+  
+  <Card title="Async Processing" icon="clock" href="/xparse/parse/async-processing">
+    Process large documents with the asynchronous API
   </Card>
   
   <Card title="Examples" icon="book-open" href="/xparse/parse/examples">
-    See real-world parsing examples
+    Real-world parsing examples with different document types
   </Card>
 </CardGroup>

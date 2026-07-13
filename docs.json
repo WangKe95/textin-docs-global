@@ -32,7 +32,6 @@
           {
             "group": "Parse",
             "pages": [
-              "xparse/parse/overview",
               "xparse/parse/quickstart",
               "xparse/parse/configuration",
               "xparse/parse/response-format",
@@ -43,7 +42,6 @@
           {
             "group": "Extract",
             "pages": [
-              "xparse/extract/overview",
               "xparse/extract/quickstart",
               "xparse/extract/schema-guide",
               "xparse/extract/response-format",
@@ -85,12 +83,8 @@
         "href": "https://github.com/intsig-textin"
       },
       {
-        "label": "News",
-        "href": "https://www.textin.ai/news/list"
-      },
-      {
         "label": "Support",
-        "href": "https://www.textin.ai/document/list"
+        "href": "https://www.textin.ai/en/contact"
       }
     ],
     "primary": {

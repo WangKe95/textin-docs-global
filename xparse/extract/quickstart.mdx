@@ -1,19 +1,48 @@
 ---
 title: "Quickstart"
-description: "Extract structured data from your first document in 5 minutes"
+description: "Extract structured data from documents using JSON Schema in 5 minutes"
 ---
 
-Pull specific fields from documents using JSON Schema definition.
+Extract pulls specific data from documents using your JSON Schema definition. Get only the fields you need—invoice totals, form data, table rows—without processing the entire document.
+
+## What you'll get
+
+Extract returns structured JSON matching your schema with source citations:
+
+```json
+{
+  "extracted_data": {
+    "invoice_number": "INV-2024-001",
+    "total_amount": 1250.00,
+    "vendor_name": "Acme Corp"
+  },
+  "citations": {
+    "invoice_number": {
+      "page_number": 1,
+      "coordinates": [137, 599, 1129, 625],
+      "text": "INV-2024-001"
+    }
+  }
+}
+```
+
+**Use Extract for:**
+- Invoice and receipt processing
+- Form data extraction
+- Contract metadata extraction
+- Structured data that matches your database schema
+
+**When to use Extract vs Parse:**
+- **Extract:** You only need specific fields, not full content (faster)
+- **Parse:** You need complete document content with preserved structure
 
 ## Before you start
 
 Get API credentials from the [TextIn Console](https://www.textin.ai/console/dashboard/setting). See [Authentication](/xparse/authentication) for details.
 
----
+## Step 1: Define your schema
 
-## Create schema
-
-Define the fields you want to extract using JSON Schema format:
+Create a JSON Schema that defines the fields you want to extract:
 
 ```json
 {
@@ -23,56 +52,74 @@ Define the fields you want to extract using JSON Schema format:
       "type": "string",
       "description": "Invoice number"
     },
-    "total_amount": {
-      "type": "number",
-      "description": "Total amount including tax"
+    "invoice_date": {
+      "type": "string",
+      "description": "Invoice date"
     },
     "vendor_name": {
       "type": "string",
       "description": "Vendor or merchant name"
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Total amount including tax"
+    },
+    "items": {
+      "type": "array",
+      "description": "Invoice line items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Item description"
+          },
+          "quantity": {
+            "type": "number",
+            "description": "Item quantity"
+          },
+          "price": {
+            "type": "number",
+            "description": "Item unit price"
+          }
+        }
+      }
     }
   },
   "required": ["invoice_number", "total_amount", "vendor_name"]
 }
 ```
 
-**Schema structure:**
-- `type`: Schema type (`"object"` at top level)
-- `properties`: Collection of fields to extract
-  - Each field has:
-    - `type`: Field data type (see types below)
-    - `description`: What to extract (helps AI understand)
-    - `enum`: List of allowed values (for enum type)
-    - `items`: Structure for array elements (for array type)
-- `required`: List of required fields (also defines field order)
+**Schema components:**
+- `type`: Data type at each level (`"object"` at root)
+- `properties`: Fields to extract with their definitions
+- `description`: Helps AI understand what to extract (important!)
+- `required`: Required fields (also defines extraction order)
 
-**Supported field types:**
-- `string` - Text
-- `number` - Numeric (int or float)
-- `integer` - Integer only
+**Supported types:**
+- `string` - Text values
+- `number` - Numeric values (int or float)
+- `integer` - Integer values only
 - `enum` - Predefined choices
 - `object` - Nested fields
-- `array` - List of items
+- `array` - Lists of items
 
-**Type can include null:**
+**Allow null values:**
 ```json
 "type": ["string", "null"]  // Field can be string or null
 ```
-Even without null, the API returns null for missing fields.
 
 <Tip>
-  **Use the visual builder:** Create schemas easily with our [web interface](https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown&tab=llmExtract). See [Schema Guide](/xparse/extract/schema-guide) for details.
+  **Use the visual builder:** Create schemas easily with our [web interface](https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown&tab=llmExtract). Upload a sample document and add fields visually. See [Schema Guide](/xparse/extract/schema-guide) for a walkthrough.
 </Tip>
 
 <Warning>
   **Schema limits:**
   - Maximum **3 levels** of nesting (object/array depth)
-  - Maximum **100 leaf fields** (lowest-level fields that hold actual values)
+  - Maximum **100 leaf fields** (fields that hold actual values)
 </Warning>
 
----
-
-## Call API
+## Step 2: Extract data
 
 <Tabs>
   <Tab title="Python">
@@ -101,8 +148,12 @@ Even without null, the API returns null for missing fields.
             schema=schema
         )
     
-    # Get extracted data
+    # Access extracted data
     print(result.extracted_data)
+    
+    # Access citations
+    for field, citation in result.citations.items():
+        print(f"{field}: page {citation['bounding_regions'][0]['page_number']}")
     ```
   </Tab>
 
@@ -126,8 +177,13 @@ Even without null, the API returns null for missing fields.
             "total_amount": {
               "type": "number",
               "description": "Total amount including tax"
+            },
+            "vendor_name": {
+              "type": "string",
+              "description": "Vendor name"
             }
-          }
+          },
+          "required": ["invoice_number", "total_amount", "vendor_name"]
         }
       }'
     ```
@@ -158,15 +214,18 @@ Even without null, the API returns null for missing fields.
       schema: schema
     });
     
-    // Get extracted data
+    // Access extracted data
     console.log(result.extractedData);
+    
+    // Access citations
+    Object.entries(result.citations).forEach(([field, citation]) => {
+      console.log(`${field}: page ${citation.bounding_regions[0].page_number}`);
+    });
     ```
   </Tab>
 </Tabs>
 
----
-
-## Response
+## Step 3: Use the results
 
 The API returns structured JSON matching your schema:
 
@@ -177,8 +236,16 @@ The API returns structured JSON matching your schema:
   "data": {
     "extracted_data": {
       "invoice_number": "INV-2024-001",
+      "invoice_date": "2024-01-15",
+      "vendor_name": "Acme Corp",
       "total_amount": 1250.00,
-      "vendor_name": "Acme Corp"
+      "items": [
+        {
+          "description": "Product A",
+          "quantity": 5,
+          "price": 250.00
+        }
+      ]
     },
     "citations": {
       "invoice_number": {
@@ -196,96 +263,99 @@ The API returns structured JSON matching your schema:
 }
 ```
 
-**What you get:**
-- `extracted_data`: JSON matching your schema
-- `citations`: Source locations with page numbers and pixel coordinates
+**Response includes:**
+- `extracted_data`: Structured JSON matching your schema
+- `citations`: Source locations with page numbers and coordinates for verification
 
----
+**Use citations for:**
+- Verifying extraction accuracy
+- Visual highlighting in your UI
+- Audit trails and compliance
 
-## Additional options
+## Extraction options
 
-You can customize extraction with additional parameters:
+Customize extraction with additional parameters:
 
-**parse_options** - Document preprocessing:
-```json
-{
-  "parse_options": {
-    "crop_dewarp": 1,        // Auto-crop and straighten (0 or 1)
-    "get_image": "both"      // Image extraction: "none", "page", "objects", "both"
-  }
-}
-```
-
-**extract_options** - Extraction behavior:
-```json
-{
-  "extract_options": {
-    "generate_citations": true,  // Include source locations
-    "stamp": true                // Extract stamp/seal information
-  }
-}
-```
-
-**Full example with options:**
 ```python
 result = client.extract.run(
     file=f,
     schema=schema,
     parse_options={
-        "crop_dewarp": 1,
-        "get_image": "both"
+        "crop_dewarp": 1,        # Auto-crop and straighten
+        "get_image": "both"      # Extract images: "none", "page", "objects", "both"
     },
     extract_options={
-        "generate_citations": True,
-        "stamp": True
+        "generate_citations": True,  # Include source locations
+        "stamp": True                # Extract stamp/seal information
     }
 )
 ```
 
----
+**parse_options** - Document preprocessing:
+- `crop_dewarp`: Auto-crop and straighten skewed pages (0 or 1)
+- `get_image`: Image extraction mode
 
-## What you can extract
+**extract_options** - Extraction behavior:
+- `generate_citations`: Include source locations (default: true)
+- `stamp`: Extract stamp/seal information (default: false)
 
-<CardGroup cols={3}>
-  <Card title="Invoices" icon="file-invoice">
-    Invoice number, date, vendor, line items, totals
+## Common use cases
+
+<CardGroup cols={2}>
+  <Card title="Invoice Processing" icon="file-invoice">
+    Extract invoice number, date, vendor, line items, and totals for accounting automation
   </Card>
   
-  <Card title="Receipts" icon="receipt">
-    Merchant, date, items, subtotal, tax, total
+  <Card title="Receipt Automation" icon="receipt">
+    Pull merchant, date, items, and totals for expense tracking
   </Card>
   
-  <Card title="Forms" icon="file-lines">
-    Name, address, checkboxes, signatures, dates
+  <Card title="Form Processing" icon="file-lines">
+    Extract form field values to populate databases
   </Card>
   
-  <Card title="Contracts" icon="file-contract">
-    Parties, dates, values, key terms
-  </Card>
-  
-  <Card title="Tables" icon="table">
-    Multi-row data with defined columns
-  </Card>
-  
-  <Card title="Purchase Orders" icon="box">
-    PO number, items, quantities, prices
+  <Card title="Contract Metadata" icon="file-contract">
+    Extract key terms, dates, parties, and values for contract management
   </Card>
 </CardGroup>
 
----
+### Invoice processing example
+
+**Common fields:**
+- `invoice_number`, `invoice_date`
+- `vendor_name`, `vendor_address`
+- `items[]` (description, quantity, unit_price)
+- `subtotal`, `tax`, `total`
+- `payment_terms`, `due_date`
+
+### Receipt automation example
+
+**Common fields:**
+- `merchant_name`, `date`, `time`
+- `items[]` (name, price)
+- `subtotal`, `tax`, `total`
+- `payment_method`, `last_4_digits`
+
+### Form processing example
+
+**Common fields:**
+- Personal info: `name`, `email`, `phone`
+- Address: `street`, `city`, `state`, `zip_code`
+- `checkboxes[]`, `signature_present`
+- `date_signed`, `applicant_signature`
 
 ## Next steps
 
 <CardGroup cols={3}>
   <Card title="Schema Guide" icon="book" href="/xparse/extract/schema-guide">
-    Create schemas visually
+    Learn to create extraction schemas with the visual builder
   </Card>
   
   <Card title="Best Practices" icon="lightbulb" href="/xparse/extract/best-practices">
-    Tips for better accuracy
+    Tips for improving extraction accuracy
   </Card>
   
   <Card title="Response Format" icon="code" href="/xparse/extract/response-format">
-    Understand the output
+    Detailed documentation of the response structure
   </Card>
 </CardGroup>
