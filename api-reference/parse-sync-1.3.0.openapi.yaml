@@ -303,12 +303,12 @@ components:
       type: apiKey
       in: header
       name: x-ti-app-id
-      description: 'Please [log in to Textin](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-app-id'
+      description: 'Please [log in to TextIn](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-app-id'
     SecretCodeAuth:
       type: apiKey
       in: header
       name: x-ti-secret-code
-      description: 'Please [log in to Textin](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-secret-code'
+      description: 'Please [log in to TextIn](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-secret-code'
 
   schemas:
     # ──────────────────────────────────────
@@ -423,7 +423,7 @@ components:
             - 200: Success
             - 40101: x-ti-app-id or x-ti-secret-code is empty
             - 40102: x-ti-app-id or x-ti-secret-code is invalid, authentication failed
-            - 40103: Client IP is not in the whitelist
+            - 40103: Client IP is not in the allowlist
             - 40003: Insufficient balance, please recharge before using
             - 40004: Parameter error, please check the technical documentation and verify the parameters
             - 40007: Robot does not exist or is not published
@@ -431,7 +431,7 @@ components:
             - 40301: Image type not supported
             - 40302: Uploaded file size does not meet requirements, file size must not exceed 500M
             - 40303: File type not supported. The API will return the actual detected file type, e.g., "Current file type is .gif"
-            - 40304: Image dimensions do not meet requirements. Images with aspect ratio less than 2 must have width and height between 20~20000 pixels, other images must have width and height between 20~10000 pixels
+            - 40304: Image dimensions do not meet requirements. Images with aspect ratio less than 2 must have width and height between 20-20000 pixels, other images must have width and height between 20-10000 pixels
             - 40305: Recognition file not uploaded
             - 40306: QPS exceeds limit
             - 40307: Daily free quota exhausted

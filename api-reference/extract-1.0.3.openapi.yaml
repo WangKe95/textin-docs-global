@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
-  title: 智能文档识别（抽取）-API文档
-  description: 智能文档识别（抽取）-API文档
+  title: Intelligent Document Recognition (Extraction) - API Documentation
+  description: Intelligent Document Recognition (Extraction) - API Documentation
   version: 1.0.3
 
 servers:
@@ -19,15 +19,11 @@ paths:
     post:
       summary: general information extration
       operationId: llm_uie_v3
-      description: |
-        智能抽取API已更新至v3， 如需查看旧版API请[点击](https://www.textin.ai/document/legacy/open_kie_vlm_engine)
-
-        快速调试：请参考[Postman调试教程](/xparse/extract-debug-postman)或[Apifox调试教程](/xparse/extract-debug-apifox)
       requestBody:
         description: |
-          支持的文件格式：png, jpg, jpeg, pdf, bmp, tiff, webp, doc, docx, html, mhtml, xls, xlsx, csv, ppt, pptx, txt, ofd；
+          Supported file formats: png, jpg, jpeg, pdf, bmp, tiff, webp, doc, docx, html, mhtml, xls, xlsx, csv, ppt, pptx, txt, ofd.
 
-          支持schema模式的结构化信息抽取，通过定义字段结构进行精确抽取。
+          Supports schema-based structured information extraction, where you define the field structure for precise extraction.
         required: true
         content:
           application/json:
@@ -39,33 +35,33 @@ paths:
               properties:
                 file:
                   type: object
-                  description: 文件信息
+                  description: File information
                   properties:
                     file_base64:
                       type: string
                       description: |
-                        待处理文件的base64编码，与file_url二选一
+                        Base64-encoded content of the file to process. Mutually exclusive with file_url.
                       example: "/9j/4AAQSk..."
                     file_url:
                       type: string
                       description: |
-                        待处理文件的url链接，与file_base64二选一，如果存在file_base64则会被忽略
+                        URL of the file to process. Mutually exclusive with file_base64. If file_base64 is present, file_url is ignored.
                       example: "https://example.com/document.pdf"
                     file_name:
                       type: string
                       description: |
-                        用于前端展示的文件名，可选
+                        File name for front-end display. Optional.
                       example: "document.pdf"
                 schema:
                   type: object
                   description: |
-                    抽取数据结构，参考[JSON schema说明](/xparse/extract-quickstart-v3#json-schema-结构说明和抽取指南)
+                    Extraction data structure. See the [Schema Guide](/xparse/extract/schema-guide#schema-json-structure).
                   example:
                     {
                       type: "object",
                       properties:
-                        { "商品": { type: "string", description: "商品名称" } },
-                      required: ["商品"],
+                        { "product": { type: "string", description: "Product name" } },
+                      required: ["product"],
                     }
                 parse_options:
                   $ref: "#/components/schemas/ParseOptions"
@@ -74,7 +70,7 @@ paths:
 
       responses:
         "200":
-          description: 返回结果
+          description: Response result
           content:
             application/json:
               schema:
@@ -88,31 +84,31 @@ components:
       type: apiKey
       in: header
       name: x-ti-app-id
-      description: '请[登录Textin](https://www.textin.ai/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+      description: 'Please [log in to TextIn](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-app-id'
     SecretCodeAuth:
       type: apiKey
       in: header
       name: x-ti-secret-code
-      description: '请[登录Textin](https://www.textin.ai/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+      description: 'Please [log in to TextIn](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - Account Settings - Developer Information" to view x-ti-secret-code'
   schemas:
     SchemaDefinition:
       type: object
-      description: 抽取数据结构定义
+      description: Extraction data structure definition
       required:
         - type
         - properties
       properties:
         properties:
           type: object
-          description: 单个字段描述
+          description: Definition of a single field
           properties:
             name:
               type: string
-              description: 字段名
-              example: "商品名称"
+              description: Field name
+              example: "Product name"
             type:
               type: string
-              description: 字段类型
+              description: Field type
               enum:
                 - string
                 - number
@@ -123,37 +119,37 @@ components:
               example: "string"
             description:
               type: string
-              description: 字段提示词
-              example: "提取商品的名称信息"
+              description: Field prompt
+              example: "Extract the product name"
           required: ["name", "type"]
         type:
           type: string
-          description: 字段类型
+          description: Field type
           example: "object"
         required:
           type: array
-          description: 用于固定当前层 properties 的 key 顺序
+          description: Fixes the key order of the properties at the current level
           items:
             type: string
-          example: ["商品名称", "价格"]
+          example: ["Product name", "Price"]
     ParseOptions:
       type: object
-      description: 解析阶段参数
+      description: Parsing stage parameters
       additionalProperties: false
       properties:
         page_start:
           type: integer
-          description: 从第几页开始抽取，默认为1
+          description: Page number to start extraction from. Default is 1.
           default: 1
           example: 1
         page_count:
           type: integer
-          description: 要进行抽取的pdf页数，默认为100页
+          description: Number of PDF pages to extract. Default is 100.
           default: 100
           example: 10
         get_image:
           type: string
-          description: 获取图片，默认为objects
+          description: Image retrieval mode. Default is objects.
           enum:
             - none
             - both
@@ -163,31 +159,31 @@ components:
           example: "objects"
         crop_dewarp:
           type: integer
-          description: 是否进行切边矫正处理
+          description: Whether to perform cropping and dewarping preprocessing on the document.
           enum: [0, 1]
           default: 0
           example: 0
         remove_watermark:
           type: integer
-          description: 是否进行去水印处理
+          description: Whether to perform watermark removal preprocessing on the document.
           enum: [0, 1]
           default: 0
           example: 0
         parse_mode:
           type: string
           description: |
-            文档的解析模式，默认为scan模式。
-            - auto 由引擎自动选择，适用范围最广
-            - scan 文档统一当成图片解析（如pdf每一页都当成图片解析）
-            - lite 轻量版，只输出表格和文字结果
-            - parse 仅电子档文字解析，速度最快
-            - vlm 视觉语言模型解析模式
+            Document parsing mode. Default is scan.
+            - auto: The engine selects automatically; widest applicability.
+            - scan: Parse the whole document as images (e.g., each PDF page is parsed as an image).
+            - lite: Lightweight mode; outputs only tables and text.
+            - parse: Digital text parsing only; fastest.
+            - vlm: Vision-language model parsing mode.
           enum: [auto, scan, lite, parse, vlm]
           default: "scan"
           example: "scan"
         formula_level:
           type: integer
-          description: 公式识别等级
+          description: Formula recognition level.
           enum: [0, 1, 2]
           default: 0
           example: 0
@@ -198,22 +194,22 @@ components:
         pdf_pwd:
           type: string
           description: |
-            当pdf为加密文档时，需要提供密码。 
-            备注：对前端封装该接口时，需要自行对密码进行安全防护
+            Password for an encrypted PDF document.
+            Note: when wrapping this API on the front end, protect the password appropriately.
 
     ExtractOptions:
       type: object
-      description: 高级抽取控制
+      description: Advanced extraction controls
       additionalProperties: false
       properties:
         generate_citations:
           type: boolean
-          description: 是否生成引用信息
+          description: Whether to generate citation information.
           default: false
           example: true
         stamp:
           type: boolean
-          description: 是否调用印章识别
+          description: Whether to run stamp (seal) recognition.
           default: false
           example: true
 
@@ -227,30 +223,30 @@ components:
         code:
           type: integer
           description: |
-            状态码
-            - 200: Success (成功)
-            - 40101: x-ti-app-id 或 x-ti-secret-code 为空
-            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败
-            - 40103: 客户端IP不在白名单
-            - 40003: 余额不足，请充值后再使用
-            - 40004: Parameter error (参数错误，请检查入参）
-            - 40007: 机器人不存在或未发布
-            - 40008: 机器人未开通，请至市场开通后重试
-            - 40302: 上传文件大小不符，文件大小不超过 50M
-            - 40303: 文件类型不支持，接口会返回实际检测到的文件类型，如“当前文件类型为.gif”
-            - 40304: 图片尺寸不符，长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内
-            - 40305: File not uploaded (识别文件未上传）
-            - 40306: qps超过限制
-            - 40400: 无效的请求链接，请检查链接是否正确
-            - 40422: The file is corrupted (文件损坏)
-            - 40423: Password required or incorrect password (PDF密码错误)
-            - 40424: Page number out of range (页面设置超出文件范围）
-            - 40425: The input file format is not supported (输入文件格式不支持）
-            - 40428: Process office file failed (word和ppt转pdf失败或者超时)
-            - 500: Engine failed (服务器内部错误）
-            - 50011: LLM Connection Failed （访问大模型超时）
-            - 50012: LLM Engine Failed (大模型引擎错误）     
-            - 50207: Partial failed (部分页面解析失败)
+            Status code
+            - 200: Success
+            - 40101: x-ti-app-id or x-ti-secret-code is empty
+            - 40102: x-ti-app-id or x-ti-secret-code is invalid, authentication failed
+            - 40103: Client IP is not in the allowlist
+            - 40003: Insufficient balance, please recharge before using
+            - 40004: Parameter error, please check the technical documentation and verify the parameters
+            - 40007: Robot does not exist or is not published
+            - 40008: Robot is not activated, please activate it from the market before retrying
+            - 40302: Uploaded file size does not meet requirements, file size must not exceed 50M
+            - 40303: File type not supported. The API will return the actual detected file type, e.g., "Current file type is .gif"
+            - 40304: Image dimensions do not meet requirements. Images with aspect ratio less than 2 must have width and height between 20-20000 pixels, other images must have width and height between 20-10000 pixels
+            - 40305: Recognition file not uploaded
+            - 40306: QPS exceeds limit
+            - 40400: Invalid request URL, please check if the URL is correct
+            - 40422: The file is corrupted
+            - 40423: Password required or incorrect password
+            - 40424: Page number out of range
+            - 40425: The input file format is not supported
+            - 40428: Process office file failed or timeout
+            - 500: Internal server error
+            - 50011: LLM Connection Failed (timeout connecting to the large model)
+            - 50012: LLM Engine Failed (large model engine error)
+            - 50207: Partial failed
           enum:
             - 200
             - 40101
@@ -278,24 +274,23 @@ components:
           example: 200
         message:
           type: string
-          description: |
-            成功或错误信息
+          description: Status message
           example: "Success"
         version:
           type: string
-          description: 版本号
+          description: Version number
           example: "v3.0.29_20250819"
         duration:
           type: integer
-          description: 总耗时(ms)
+          description: Total processing time (milliseconds)
           example: 8267
         x_request_id:
           type: string
-          description: 请求ID
+          description: Request ID
           example: "7596b8c9d2ddbc9924b66651e9efc174"
         status:
           type: string
-          description: 处理状态
+          description: Processing status
           example: "finished"
 
     ExtractionResult:
@@ -306,67 +301,67 @@ components:
           properties:
             success_count:
               type: integer
-              description: 成功处理的页数
+              description: Billable page count / successful page count
               example: 1
             extracted_schema:
               type: object
               description: |
-                结构化抽取结果，根据用户定义的schema进行抽取的简化键值对结构
+                Structured extraction result: a simplified key-value structure extracted according to the user-defined schema.
 
-                由于使用结构化抽取，具体的字段名称和数据类型由用户的schema决定，无法预先确定
+                Because extraction is schema-driven, the specific field names and data types are determined by the user's schema and cannot be predetermined.
               additionalProperties: true
               example:
-                商品: "童装 Looney Tunes UT（短袖T恤）女装SUPIMA COTTON圆领T恤（短袖）"
+                product: "Kids' Looney Tunes UT (short-sleeve T-shirt), Women's SUPIMA COTTON crew-neck T-shirt (short-sleeve)"
             citations:
               type: object
               description: |
-                带坐标信息的抽取结果，包含详细的位置信息和边界框数据，用于高级处理场景
+                Extraction result with coordinate information, including detailed location and bounding-box data for advanced processing scenarios.
 
-                由于使用结构化抽取，具体的字段名称无法预先确定，但每个字段值都遵循统一的结构格式，包含抽取值、页码信息和详细的坐标数据
+                Because extraction is schema-driven, the specific field names cannot be predetermined, but every field value follows a consistent structure that includes the extracted value, page number, and detailed coordinate data.
               additionalProperties:
                 type: object
                 allOf:
                   - $ref: "#/components/schemas/CitationItem"
               example:
-                商品:
-                  value: "童装 Looney Tunes UT（短袖T恤）女装SUPIMA COTTON圆领T恤（短袖）"
+                product:
+                  value: "Kids' Looney Tunes UT (short-sleeve T-shirt), Women's SUPIMA COTTON crew-neck T-shirt (short-sleeve)"
                   bounding_regions:
                     - page_number: 1
                       position: [137, 599, 1129, 599, 1129, 625, 182, 625]
-                      text: "童装 Looney Tunes UT（短袖T恤）女装SUPIMA COTTON圆领T恤（短袖）"
+                      text: "Kids' Looney Tunes UT (short-sleeve T-shirt), Women's SUPIMA COTTON crew-neck T-shirt (short-sleeve)"
             pages:
               type: array
-              description: 文档每页的处理信息
+              description: Processing information for each page of the document
               items:
                 $ref: "#/components/schemas/PageInfo"
             stamps:
               type: array
-              description: 印章识别结果
+              description: Stamp (seal) recognition results
               items:
                 $ref: "#/components/schemas/StampInfo"
         part_durations:
           type: object
-          description: 各阶段耗时统计
+          description: Processing time per stage
           properties:
             parse_duration:
               type: integer
-              description: 解析耗时(ms)
+              description: Parsing time (milliseconds)
               example: 1080
             retrieve_duration:
               type: integer
-              description: 检索耗时(ms)
+              description: Retrieval time (milliseconds)
               example: 0
             prompt_duration:
               type: integer
-              description: 提示词处理耗时(ms)
+              description: Prompt processing time (milliseconds)
               example: 1
             llm_duration:
               type: integer
-              description: 大模型推理耗时(ms)
+              description: Large model inference time (milliseconds)
               example: 7114
             format_duration:
               type: integer
-              description: 格式化耗时(ms)
+              description: Formatting time (milliseconds)
               example: 51
 
     CitationItem:
@@ -376,13 +371,13 @@ components:
         - bounding_regions
       properties:
         value:
-          description: 字段的抽取值
+          description: Extracted value of the field
           type: string
           nullable: true
-          example: "童装 Looney Tunes UT（短袖T恤）"
+          example: "Kids' Looney Tunes UT (short-sleeve T-shirt)"
         bounding_regions:
           type: array
-          description: 字段的边界框信息
+          description: Bounding-box information for the field
           items:
             $ref: "#/components/schemas/BoundingRegion"
 
@@ -395,24 +390,21 @@ components:
       properties:
         page_number:
           type: integer
-          description: 所在页码
+          description: Page number where the value is located
           example: 1
         position:
           type: array
           description: |
-            归一化坐标位置，长度为8的数组，表示四个顶点的坐标
-            [左上x, 左上y, 右上x, 右上y, 右下x, 右下y, 左下x, 左下y]
+            Quadrilateral coordinates [x1,y1,x2,y2,x3,y3,x4,y4], in the order of top-left, top-right, bottom-right, bottom-left.
           items:
             type: number
-            minimum: 0
-            maximum: 1
           minItems: 8
           maxItems: 8
           example: [137, 599, 1129, 599, 1129, 625, 182, 625]
         text:
           type: string
-          description: 该边界框内的文本内容
-          example: "童装 Looney Tunes UT（短袖T恤）"
+          description: Text content within this bounding box
+          example: "Kids' Looney Tunes UT (short-sleeve T-shirt)"
 
     PageInfo:
       type: object
@@ -423,32 +415,32 @@ components:
       properties:
         page_number:
           type: integer
-          description: 页码
+          description: Page number
           example: 1
         image_id:
           type: string
-          description: 页面图片ID，用于下载图片
+          description: Page image ID, used to download the image
           example: "62bfe3c3a8e9c9cf.jpg"
         height:
           type: integer
-          description: 页面高度
+          description: Page height
           example: 1824
         width:
           type: integer
-          description: 页面宽度
+          description: Page width
           example: 600
         angle:
           type: integer
-          description: 页面角度
+          description: Page angle
           enum: [0, 90, 180, 270]
           example: 0
         status:
           type: string
-          description: 页面处理状态
+          description: Page processing status
           example: "Success"
         durations:
           type: number
-          description: 页面处理耗时(ms)
+          description: Page processing time (milliseconds)
           example: 930.178466796875
 
     StampInfo:
@@ -457,11 +449,11 @@ components:
         color:
           type: string
           description: |
-            当前印章颜色
-            - 红色
-            - 蓝色
-            - 黑色
-            - 其他
+            Stamp color. The API returns one of the following Chinese values:
+            - 红色 (red)
+            - 蓝色 (blue)
+            - 黑色 (black)
+            - 其他 (other)
           enum:
             - 红色
             - 蓝色
@@ -470,24 +462,22 @@ components:
           example: "红色"
         position:
           type: array
-          description: 印章的坐标信息
+          description: Quadrilateral coordinates of the stamp [x1,y1,x2,y2,x3,y3,x4,y4], in the order of top-left, top-right, bottom-right, bottom-left.
           items:
             type: number
-            minimum: 0
-            maximum: 1
           minItems: 8
           maxItems: 8
           example: [1223, 995, 1642, 1007, 1630, 1689, 1621, 1677]
         stamp_shape:
           type: string
           description: |
-            当前印章形状
-            - 圆章
-            - 椭圆章
-            - 方章
-            - 三角章
-            - 菱形章
-            - 其他
+            Stamp shape. The API returns one of the following Chinese values:
+            - 圆章 (round)
+            - 椭圆章 (oval)
+            - 方章 (square)
+            - 三角章 (triangular)
+            - 菱形章 (diamond)
+            - 其他 (other)
           enum:
             - 圆章
             - 椭圆章
@@ -499,15 +489,15 @@ components:
         type:
           type: string
           description: |
-            当前印章类型
-            - 公章
-            - 个人章
-            - 专用章
-            - 其他
-            - 合同专用章
-            - 财务专用章
-            - 发票专用章
-            - 业务专用章
+            Stamp type. The API returns one of the following Chinese values:
+            - 公章 (official seal)
+            - 个人章 (personal seal)
+            - 专用章 (special-purpose seal)
+            - 其他 (other)
+            - 合同专用章 (contract seal)
+            - 财务专用章 (finance seal)
+            - 发票专用章 (invoice seal)
+            - 业务专用章 (business seal)
           enum:
             - 公章
             - 个人章
@@ -520,5 +510,5 @@ components:
           example: "公章"
         value:
           type: string
-          description: 印章的文本内容
+          description: Text content of the stamp
           example: "电力公司专用章"
