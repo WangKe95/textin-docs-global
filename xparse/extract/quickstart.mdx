@@ -1,361 +1,219 @@
 ---
-title: "Quickstart"
-description: "Extract structured data from documents using JSON Schema in 5 minutes"
+title: "Extract Quickstart"
+description: "Extract selected fields from a document as structured JSON that matches your schema."
 ---
 
-Extract pulls specific data from documents using your JSON Schema definition. Get only the fields you need—invoice totals, form data, table rows—without processing the entire document.
+**Extract** returns selected fields from a document as structured JSON that matches your schema.
 
-## What you'll get
+In this quickstart, you will:
 
-Extract returns structured JSON matching your schema with source citations:
-
-```json
-{
-  "extracted_data": {
-    "invoice_number": "INV-2024-001",
-    "total_amount": 1250.00,
-    "vendor_name": "Acme Corp"
-  },
-  "citations": {
-    "invoice_number": {
-      "page_number": 1,
-      "coordinates": [137, 599, 1129, 625],
-      "text": "INV-2024-001"
-    }
-  }
-}
-```
-
-**Use Extract for:**
-- Invoice and receipt processing
-- Form data extraction
-- Contract metadata extraction
-- Structured data that matches your database schema
-
-**When to use Extract vs Parse:**
-- **Extract:** You only need specific fields, not full content (faster)
-- **Parse:** You need complete document content with preserved structure
+1. Define a small extraction schema.
+2. Send an extraction request with Python.
+3. Read the structured JSON returned by Extract.
 
 ## Before you start
 
-Get API credentials from the [TextIn Console](https://www.textin.ai/console/dashboard/setting). See [Authentication](/xparse/authentication) for details.
+You need:
 
-## Step 1: Define your schema
+- TextIn API credentials. See [Authentication](/xparse/authentication).
+- Python 3.8 or later.
+- A document that contains the fields you want to extract.
 
-Create a JSON Schema that defines the fields you want to extract:
+<Info>
+  For supported formats, file size limits, page limits, and concurrency limits, see [Supported Files & Limits](/xparse/supported-files).
+</Info>
+
+## Install dependencies
+
+```bash
+pip install requests
+```
+
+## Set your credentials
+
+```bash
+export TEXTIN_APP_ID="your-app-id"
+export TEXTIN_SECRET_CODE="your-secret-code"
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:TEXTIN_APP_ID="your-app-id"
+$env:TEXTIN_SECRET_CODE="your-secret-code"
+```
+
+## Define the fields to extract
+
+Create a schema that describes the fields you need. The examples in this page use the schema JSON format accepted by Extract.
 
 ```json
 {
   "type": "object",
   "properties": {
     "invoice_number": {
-      "type": "string",
-      "description": "Invoice number"
-    },
-    "invoice_date": {
-      "type": "string",
-      "description": "Invoice date"
+      "type": ["string", "null"],
+      "description": "The invoice number"
     },
     "vendor_name": {
-      "type": "string",
-      "description": "Vendor or merchant name"
+      "type": ["string", "null"],
+      "description": "The vendor or merchant name"
     },
     "total_amount": {
-      "type": "number",
-      "description": "Total amount including tax"
-    },
-    "items": {
-      "type": "array",
-      "description": "Invoice line items",
-      "items": {
-        "type": "object",
-        "properties": {
-          "description": {
-            "type": "string",
-            "description": "Item description"
-          },
-          "quantity": {
-            "type": "number",
-            "description": "Item quantity"
-          },
-          "price": {
-            "type": "number",
-            "description": "Item unit price"
-          }
-        }
-      }
+      "type": ["number", "null"],
+      "description": "The total amount including tax"
     }
   },
-  "required": ["invoice_number", "total_amount", "vendor_name"]
+  "required": ["invoice_number", "vendor_name", "total_amount"]
 }
 ```
 
-**Schema components:**
-- `type`: Data type at each level (`"object"` at root)
-- `properties`: Fields to extract with their definitions
-- `description`: Helps AI understand what to extract (important!)
-- `required`: Required fields (also defines extraction order)
+In a schema:
 
-**Supported types:**
-- `string` - Text values
-- `number` - Numeric values (int or float)
-- `integer` - Integer values only
-- `enum` - Predefined choices
-- `object` - Nested fields
-- `array` - Lists of items
+- The property name becomes the output field name.
+- `type` defines the expected value type.
+- `description` helps the extraction model identify the correct value in the document.
 
-**Allow null values:**
-```json
-"type": ["string", "null"]  // Field can be string or null
+<Info>
+  See [Schema Guide](/xparse/extract/schema-guide) for field types, nested objects, arrays, and schema limits.
+</Info>
+
+## Send an extraction request
+
+```python
+import base64
+import json
+import os
+import requests
+
+schema = {
+    "type": "object",
+    "properties": {
+        "invoice_number": {
+            "type": ["string", "null"],
+            "description": "The invoice number",
+        },
+        "vendor_name": {
+            "type": ["string", "null"],
+            "description": "The vendor or merchant name",
+        },
+        "total_amount": {
+            "type": ["number", "null"],
+            "description": "The total amount including tax",
+        },
+    },
+    "required": ["invoice_number", "vendor_name", "total_amount"],
+}
+
+with open("invoice.pdf", "rb") as file:
+    file_base64 = base64.b64encode(file.read()).decode("utf-8")
+
+response = requests.post(
+    "https://api.textin.ai/ai/service/v3/entity_extraction",
+    headers={
+        "x-ti-app-id": os.environ["TEXTIN_APP_ID"],
+        "x-ti-secret-code": os.environ["TEXTIN_SECRET_CODE"],
+        "Content-Type": "application/json",
+    },
+    json={
+        "file": {"file_base64": file_base64},
+        "schema": schema,
+        "parse_options": {"parse_mode": "auto"},
+        "extract_options": {"generate_citations": False},
+    },
+)
+
+response.raise_for_status()
+result = response.json()["result"]
+
+print(json.dumps(result["extracted_schema"], indent=2, ensure_ascii=False))
 ```
 
-<Tip>
-  **Use the visual builder:** Create schemas easily with our [web interface](https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown&tab=llmExtract). Upload a sample document and add fields visually. See [Schema Guide](/xparse/extract/schema-guide) for a walkthrough.
-</Tip>
+## Read the extracted data
 
-<Warning>
-  **Schema limits:**
-  - Maximum **3 levels** of nesting (object/array depth)
-  - Maximum **100 leaf fields** (fields that hold actual values)
-</Warning>
-
-## Step 2: Extract data
-
-<Tabs>
-  <Tab title="Python">
-    ```bash
-    # Install SDK
-    pip install xparse-client
-    ```
-    
-    ```python
-    from xparse_client import XParseClient
-    import json
-
-    # Initialize client
-    client = XParseClient(
-        app_id="your-app-id",
-        secret_code="your-secret-code"
-    )
-
-    # Load schema
-    schema = json.loads(open("invoice_schema.json").read())
-
-    # Extract data
-    with open("invoice.pdf", "rb") as f:
-        result = client.extract.run(
-            file=f,
-            schema=schema
-        )
-    
-    # Access extracted data
-    print(result.extracted_data)
-    
-    # Access citations
-    for field, citation in result.citations.items():
-        print(f"{field}: page {citation['bounding_regions'][0]['page_number']}")
-    ```
-  </Tab>
-
-  <Tab title="cURL">
-    ```bash
-    curl -X POST "https://api.textin.com/ai/service/v3/entity_extraction" \
-      -H "x-ti-app-id: YOUR_APP_ID" \
-      -H "x-ti-secret-code: YOUR_SECRET_CODE" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "file": {
-          "file_url": "https://example.com/invoice.pdf"
-        },
-        "schema": {
-          "type": "object",
-          "properties": {
-            "invoice_number": {
-              "type": "string",
-              "description": "Invoice number"
-            },
-            "total_amount": {
-              "type": "number",
-              "description": "Total amount including tax"
-            },
-            "vendor_name": {
-              "type": "string",
-              "description": "Vendor name"
-            }
-          },
-          "required": ["invoice_number", "total_amount", "vendor_name"]
-        }
-      }'
-    ```
-  </Tab>
-
-  <Tab title="Node.js">
-    ```bash
-    # Install SDK
-    npm install xparse-client
-    ```
-    
-    ```javascript
-    import { XParseClient } from 'xparse-client';
-    import fs from 'fs';
-
-    // Initialize client
-    const client = new XParseClient({
-      appId: 'your-app-id',
-      secretCode: 'your-secret-code'
-    });
-
-    // Load schema
-    const schema = JSON.parse(fs.readFileSync('invoice_schema.json'));
-
-    // Extract data
-    const result = await client.extract.run({
-      file: fs.createReadStream('invoice.pdf'),
-      schema: schema
-    });
-    
-    // Access extracted data
-    console.log(result.extractedData);
-    
-    // Access citations
-    Object.entries(result.citations).forEach(([field, citation]) => {
-      console.log(`${field}: page ${citation.bounding_regions[0].page_number}`);
-    });
-    ```
-  </Tab>
-</Tabs>
-
-## Step 3: Use the results
-
-The API returns structured JSON matching your schema:
+Extract returns structured JSON in `result["extracted_schema"]`:
 
 ```json
 {
-  "code": 200,
-  "message": "success",
-  "data": {
-    "extracted_data": {
-      "invoice_number": "INV-2024-001",
-      "invoice_date": "2024-01-15",
-      "vendor_name": "Acme Corp",
-      "total_amount": 1250.00,
-      "items": [
-        {
-          "description": "Product A",
-          "quantity": 5,
-          "price": 250.00
-        }
-      ]
-    },
-    "citations": {
-      "invoice_number": {
-        "value": "INV-2024-001",
-        "bounding_regions": [
-          {
-            "page_number": 1,
-            "position": [137, 599, 1129, 599, 1129, 625, 182, 625],
-            "text": "INV-2024-001"
-          }
-        ]
-      }
-    }
-  }
+  "invoice_number": "INV-2024-001",
+  "vendor_name": "Acme Corp",
+  "total_amount": 1250.0
 }
 ```
 
-**Response includes:**
-- `extracted_data`: Structured JSON matching your schema
-- `citations`: Source locations with page numbers and coordinates for verification
+<Note>
+  In current Extract responses, missing string fields will be returned as empty strings, and missing array fields may be returned as empty arrays.
+</Note>
 
-**Use citations for:**
-- Verifying extraction accuracy
-- Visual highlighting in your UI
-- Audit trails and compliance
+## Use cURL
 
-## Extraction options
+For a lightweight cURL example, use a hosted file URL:
 
-Customize extraction with additional parameters:
-
-```python
-result = client.extract.run(
-    file=f,
-    schema=schema,
-    parse_options={
-        "crop_dewarp": 1,        # Auto-crop and straighten
-        "get_image": "both"      # Extract images: "none", "page", "objects", "both"
+```bash
+curl -X POST "https://api.textin.ai/ai/service/v3/entity_extraction" \
+  -H "x-ti-app-id: $TEXTIN_APP_ID" \
+  -H "x-ti-secret-code: $TEXTIN_SECRET_CODE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "file": {
+      "file_url": "https://example.com/invoice.pdf"
     },
-    extract_options={
-        "generate_citations": True,  # Include source locations
-        "stamp": True                # Extract stamp/seal information
+    "schema": {
+      "type": "object",
+      "properties": {
+        "invoice_number": {
+          "type": ["string", "null"],
+          "description": "The invoice number"
+        },
+        "total_amount": {
+          "type": ["number", "null"],
+          "description": "The total amount including tax"
+        }
+      },
+      "required": ["invoice_number", "total_amount"]
+    },
+    "extract_options": {
+      "generate_citations": false
     }
-)
+  }'
 ```
 
-**parse_options** - Document preprocessing:
-- `crop_dewarp`: Auto-crop and straighten skewed pages (0 or 1)
-- `get_image`: Image extraction mode
+## Get source citations
 
-**extract_options** - Extraction behavior:
-- `generate_citations`: Include source locations (default: true)
-- `stamp`: Extract stamp/seal information (default: false)
+Enable citations when you need to show where an extracted value came from.
 
-## Common use cases
+Citations can include:
 
-<CardGroup cols={2}>
-  <Card title="Invoice Processing" icon="file-invoice">
-    Extract invoice number, date, vendor, line items, and totals for accounting automation
-  </Card>
-  
-  <Card title="Receipt Automation" icon="receipt">
-    Pull merchant, date, items, and totals for expense tracking
-  </Card>
-  
-  <Card title="Form Processing" icon="file-lines">
-    Extract form field values to populate databases
-  </Card>
-  
-  <Card title="Contract Metadata" icon="file-contract">
-    Extract key terms, dates, parties, and values for contract management
-  </Card>
-</CardGroup>
+- Page number
+- Source text
+- Bounding box coordinates
 
-### Invoice processing example
+When enabled, citations are returned in `result["citations"]`. See [Response Format](/xparse/extract/response-format) for the citation structure.
 
-**Common fields:**
-- `invoice_number`, `invoice_date`
-- `vendor_name`, `vendor_address`
-- `items[]` (description, quantity, unit_price)
-- `subtotal`, `tax`, `total`
-- `payment_terms`, `due_date`
+## Improve extraction quality
 
-### Receipt automation example
+- Use field names that match the wording in the source document.
+- Add clear field descriptions.
+- Use enums when the possible values are known.
+- Keep schemas as simple as possible.
+- Avoid asking the schema to calculate values that can be computed downstream.
 
-**Common fields:**
-- `merchant_name`, `date`, `time`
-- `items[]` (name, price)
-- `subtotal`, `tax`, `total`
-- `payment_method`, `last_4_digits`
-
-### Form processing example
-
-**Common fields:**
-- Personal info: `name`, `email`, `phone`
-- Address: `street`, `city`, `state`, `zip_code`
-- `checkboxes[]`, `signature_present`
-- `date_signed`, `applicant_signature`
+<Info>
+  See [Best Practices](/xparse/extract/best-practices) for more guidance.
+</Info>
 
 ## Next steps
 
 <CardGroup cols={3}>
   <Card title="Schema Guide" icon="book" href="/xparse/extract/schema-guide">
-    Learn to create extraction schemas with the visual builder
+    Create and export extraction schemas.
   </Card>
-  
-  <Card title="Best Practices" icon="lightbulb" href="/xparse/extract/best-practices">
-    Tips for improving extraction accuracy
-  </Card>
-  
+
   <Card title="Response Format" icon="code" href="/xparse/extract/response-format">
-    Detailed documentation of the response structure
+    Understand extracted data, citations, page-level fields, and usage fields.
+  </Card>
+
+  <Card title="Best Practices" icon="lightbulb" href="/xparse/extract/best-practices">
+    Improve schema quality and extraction accuracy.
   </Card>
 </CardGroup>

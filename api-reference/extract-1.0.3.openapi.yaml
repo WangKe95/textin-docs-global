@@ -7,7 +7,7 @@ info:
 servers:
   # - url: https://textin-sandbox.intsig.com
   #   description: Sandbox server
-  - url: https://api.textin.com
+  - url: https://api.textin.ai
     description: Production server
 
 security:

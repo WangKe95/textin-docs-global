@@ -7,7 +7,7 @@ description: "Get your API credentials and authenticate API requests."
 
 Include your App ID and Secret Code in every API request:
 
-```
+```http
 x-ti-app-id: YOUR_APP_ID
 x-ti-secret-code: YOUR_SECRET_CODE
 ```
@@ -19,16 +19,16 @@ x-ti-secret-code: YOUR_SECRET_CODE
     Sign in to your [TextIn account](https://www.textin.ai/console/dashboard/setting).
   </Step>
 
-  <Step title="Open Account & Developer Info">
-    Click your profile icon in the bottom-left corner, then select **Account & Developer Info**.
+  <Step title="Open Account & Developer">
+    Click your profile icon, then select **Account & Developer**.
 
     ![AP Ikey 1 Pn](/images/APIkey-1.png)
   </Step>
 
   <Step title="Copy your credentials">
-    Copy your App ID and Secret Code. Use them in the `x-ti-app-id` and `x-ti-secret-code` request headers.
+    Copy your **App ID** and **Secret Code**. Use them in the `x-ti-app-id` and `x-ti-secret-code` request headers.
 
-    ![AP Ikey Jp](/images/APIkey.jpg)
+    ![AP Ikey Jp](/images/APIkey.png)
   </Step>
 </Steps>
 
@@ -37,10 +37,10 @@ x-ti-secret-code: YOUR_SECRET_CODE
 Send a test request:
 
 ```bash
-curl -X POST "https://api.textin.com/api/v1/xparse/parse/sync" \
+curl -X POST "https://api.textin.ai/api/v1/xparse/parse/sync" \
   -H "x-ti-app-id: YOUR_APP_ID" \
   -H "x-ti-secret-code: YOUR_SECRET_CODE" \
-  -F "file_url=https://..."
+  -F "file_url=https://example.com/document.pdf"
 ```
 
 If authentication succeeds, the response body includes `"code": 200` and the parsed document data.
@@ -66,19 +66,10 @@ The following examples read credentials from these environment variables.
 <Tabs>
   <Tab title="cURL">
     ```bash
-    curl -X POST "https://api.textin.com/api/v1/xparse/parse/sync" \
+    curl -X POST "https://api.textin.ai/api/v1/xparse/parse/sync" \
       -H "x-ti-app-id: $TEXTIN_APP_ID" \
       -H "x-ti-secret-code: $TEXTIN_SECRET_CODE" \
       -F "file=@document.pdf"
-    ```
-  </Tab>
-
-  <Tab title="Python (SDK)">
-    ```python
-    from xparse_client import XParseClient
-
-    # Automatically reads TEXTIN_APP_ID and TEXTIN_SECRET_CODE
-    client = XParseClient()
     ```
   </Tab>
 
@@ -87,14 +78,18 @@ The following examples read credentials from these environment variables.
     import os
     import requests
 
+    headers = {
+        "x-ti-app-id": os.environ["TEXTIN_APP_ID"],
+        "x-ti-secret-code": os.environ["TEXTIN_SECRET_CODE"],
+    }
+
     response = requests.post(
-        "https://api.textin.com/api/v1/xparse/parse/sync",
-        headers={
-            "x-ti-app-id": os.getenv("TEXTIN_APP_ID"),
-            "x-ti-secret-code": os.getenv("TEXTIN_SECRET_CODE")
-        },
-        files={"file": open("document.pdf", "rb")}
+        "https://api.textin.ai/api/v1/xparse/parse/sync",
+        headers=headers,
+        files={"file": open("document.pdf", "rb")},
     )
+
+    print(response.json())
     ```
   </Tab>
 </Tabs>
@@ -103,7 +98,7 @@ The following examples read credentials from these environment variables.
 
 - Never commit credentials to version control.
 - Keep credentials on the server. Do not expose them in client-side code.
-- Use environment variables or a secret manager in production.
+- Use environment variables in production.
 - Contact TextIn support immediately if you believe your credentials have been exposed.
 
 ---

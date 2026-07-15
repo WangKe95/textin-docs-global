@@ -26,7 +26,8 @@
             "pages": [
               "xparse/overview",
               "xparse/authentication",
-              "xparse/supported-files"
+              "xparse/supported-files",
+              "xparse/errors"
             ]
           },
           {

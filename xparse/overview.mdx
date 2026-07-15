@@ -1,31 +1,31 @@
 ---
 title: "Overview"
-description: "Convert documents into structured data for AI and automation"
+description: "Convert documents into structured data for AI and automation."
 ---
 
 ## What is xParse?
 
 xParse converts PDFs, images, and Office files into Markdown and structured JSON.
 
-Use Parse to preserve full document content and structure, including headings, tables, formulas, reading order, and element coordinates. Use Extract to return specific fields that match your JSON Schema.
+Use **Parse** to preserve full document content and structure, including headings, tables, formulas, reading order, and element coordinates. Use **Extract** to return specific fields that match your extraction schema.
 
-xParse is designed for RAG pipelines, document automation, and structured data extraction.
+Common workflows include RAG pipelines, document automation, and structured data extraction.
 
-## Choose your workflow
+## Choose a workflow
 
 <CardGroup cols={2}>
-  <Card title="Parse" icon="file-lines" href="/xparse/parse/quickstart">
+  <Card title="Parse documents" icon="file-lines" href="/xparse/parse/quickstart">
     Convert full documents into Markdown and structured JSON while preserving headings, tables, formulas, reading order, and element coordinates.
-    
+
     **Use Parse when you need:**
     - Full document content for RAG or search
     - Structured document elements with coordinates
     - Preserved tables, images, and formulas
   </Card>
-  
-  <Card title="Extract" icon="table" href="/xparse/extract/quickstart">
+
+  <Card title="Extract structured data" icon="table" href="/xparse/extract/quickstart">
     Extract only the fields you need and return structured JSON that matches your schema.
-    
+
     **Use Extract when you need:**
     - Specific fields from forms, invoices, or other business documents
     - Structured data that matches your application schema
@@ -35,54 +35,59 @@ xParse is designed for RAG pipelines, document automation, and structured data e
 
 ## What you can process
 
-**Supported input formats**
+### Supported input formats
 
-**Documents:** PDF, Word, Excel, PowerPoint, HTML, TXT, OFD, and RTF
+| Category | Formats |
+| --- | --- |
+| Documents | PDF, Word, Excel, PowerPoint, HTML, TXT, OFD, RTF |
+| Images | PNG, JPEG, WebP, BMP, TIFF |
 
-**Images:** PNG, JPEG, WebP, BMP, and TIFF
+### Parse returns
 
-**Parse returns:**
 - Markdown with preserved reading order
 - Structured document elements
 - Coordinates for each element
-- Tables with preserved row and column structure
+- Tables with preserved row and column structure, when available
 - Structured output for images, formulas, handwriting, and form fields
 
-**Extract returns:**
+### Extract returns
+
 - JSON matching your schema
 - Source citations with page numbers and bounding boxes
-- Optional confidence scores and source coordinates
+- Optional confidence scores and source coordinates, when available
 
 ## Common use cases
 
-- Build RAG systems with clean document input
-- Extract invoice data for accounting automation
-- Convert research papers to searchable Markdown
-- Pull form fields from scanned documents
-- Process receipts at scale
+- Prepare documents for RAG pipelines
+- Convert research papers into Markdown for search and analysis
+- Extract fields from forms, invoices, receipts, and contracts
+- Review parsed or extracted data against source documents
 
 ## Get started
 
 <CardGroup cols={2}>
-  <Card title="Try the web app" icon="browser" href="https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown">
-    Upload a file and see results instantly
+  <Card title="Try xParse in the web app" icon="browser" href="https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown">
+    Upload a document and inspect the parsed or extracted output without writing code.
   </Card>
-  
-  <Card title="Start with the API" icon="code" href="/xparse/parse/quickstart">
-    5-minute quickstart with Python or REST
+
+  <Card title="Call the API" icon="code" href="/xparse/parse/quickstart">
+    Use the API to parse a document or extract structured fields from your application.
   </Card>
 </CardGroup>
 
 ## Next steps
 
-<CardGroup cols={3}>
-  <Card title="Get API credentials" icon="key" href="/xparse/authentication">
-    Sign up and grab your keys
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/xparse/authentication">
+    Get your App ID and Secret Code.
   </Card>
-  <Card title="Parse a document" icon="file-code" href="/xparse/parse/quickstart">
-    Full document → Markdown + JSON
+  <Card title="Supported Files & Limits" icon="file" href="/xparse/supported-files">
+    Review supported formats, file sizes, page limits, and concurrency limits.
   </Card>
-  <Card title="Extract specific fields" icon="table-cells" href="/xparse/extract/quickstart">
-    Define schema → get structured data
+  <Card title="Parse Quickstart" icon="file-code" href="/xparse/parse/quickstart">
+    Parse your first document.
+  </Card>
+  <Card title="Extract Quickstart" icon="table-cells" href="/xparse/extract/quickstart">
+    Extract structured data with an extraction schema.
   </Card>
 </CardGroup>

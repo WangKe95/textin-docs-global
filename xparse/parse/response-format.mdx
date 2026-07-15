@@ -1,92 +1,75 @@
 ---
 title: "Response Format"
-description: "Understand parsing results and how to use them"
+description: "Understand the Parse response format."
 ---
 
-Every parsing response returns structured data in a unified format. This guide explains what you get and how to use it.
+Parse returns Markdown, structured document elements, and optional output fields based on the capabilities you enable in the request.
 
-## Response structure
+This page describes the standard synchronous response format. If you download the final result from an asynchronous `result_url`, the file contains the parse result object directly, without the outer `code`, `message`, and `data` wrapper.
+
+## Response overview
 
 ```json
 {
   "code": 200,
   "message": "success",
   "data": {
+    "schema_version": "1.3.0",
     "file_id": "doc_7f3a2b",
-    "success_count": 5,
+    "metadata": {},
     "markdown": "# Title\n\nContent...",
-    "elements": [...],
-    "pages": [...],
-    "title_tree": [...]
+    "elements": [],
+    "pages": [],
+    "title_tree": [],
+    "summary": {}
   }
 }
 ```
 
-### Top-level fields
+## Top-level fields
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `code` | int | HTTP status code (200 = success) |
-| `message` | string | Status message |
-| `data` | object | Parsing results |
+| --- | --- | --- |
+| `code` | integer | Application-level response code |
+| `message` | string | Response message |
+| `data` | object | Parse result |
+| `x_request_id` | string | Request identifier |
 
-### data fields
+## `data` fields
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `schema_version` | string | Data structure version (currently `"1.3.0"`) |
-| `file_id` | string | Unique file identifier (use for caching) |
-| `job_id` | string | Job identifier (for async requests) |
-| `success_count` | int | Successfully parsed pages (billing basis) |
-| `metadata` | object | File metadata (name, type, page count) |
-| `markdown` | string | AI-ready Markdown content |
+| --- | --- | --- |
+| `schema_version` | string | Response schema version |
+| `file_id` | string | File identifier |
+| `job_id` | string | Task identifier, when returned |
+| `success_count` | integer | Number of pages processed successfully |
+| `metadata` | object | File-level metadata |
+| `markdown` | string | Document content in Markdown format |
 | `elements` | array | Structured document elements |
-| `title_tree` | array | Table of contents (requires `title_tree: true`) |
-| `pages` | array | Page metadata (requires `pages: true`) |
-| `summary` | object | Processing time statistics |
+| `pages` | array | Page-level information, returned when the `pages` capability is enabled |
+| `title_tree` | array | Document outline, returned when the `title_tree` capability is enabled |
+| `summary` | object | Processing summary |
 
----
+## `metadata`
 
-## Markdown
+The `metadata` object contains file-level information.
 
-Clean, structured content ready for LLMs.
+Common fields include:
 
-```json
-{
-  "markdown": "# Annual Report 2024\n\n## Executive Summary\n\nThis report presents..."
-}
-```
+| Field | Type | Description |
+| --- | --- | --- |
+| `filename` | string | Original file name |
+| `filetype` | string | File type or extension |
+| `page_count` | integer | Number of pages in the document |
+| `data_source` | string | Source type, when returned |
 
-**What's included:**
-- Headings with proper hierarchy (`#`, `##`, `###`)
-- Paragraphs and lists
-- Tables (HTML or Markdown format, see `table_view`)
-- Formulas in LaTeX format
-- Reading order preserved
+## `elements`
 
-**Use for:**
-- RAG pipelines
-- LLM input (GPT-4, Claude, etc.)
-- Vector embeddings
-- Search indexing
-- Document summarization
+The `elements` array contains structured document elements in reading order.
 
-**Example:**
-```python
-markdown = response["data"]["markdown"]
+Each element represents a structural unit in the document, such as a heading, paragraph, table, image, formula, header, or footer.
 
-# Send to LLM
-summary = openai.ChatCompletion.create(
-    model="gpt-4",
-    messages=[{"role": "user", "content": f"Summarize: {markdown}"}]
-)
-```
-
----
-
-## Elements
-
-Structured representation of document content.
+### Basic structure
 
 ```json
 {
@@ -96,14 +79,8 @@ Structured representation of document content.
       "type": "Title",
       "text": "Annual Report 2024",
       "page_number": 1,
-      "coordinates": [0.100000, 0.120000, 0.900000, 0.120000, 0.900000, 0.160000, 0.100000, 0.160000]
-    },
-    {
-      "element_id": "el_002",
-      "type": "NarrativeText",
-      "text": "This report presents...",
-      "page_number": 1,
-      "coordinates": [0.100000, 0.180000, 0.900000, 0.180000, 0.900000, 0.250000, 0.100000, 0.250000]
+      "coordinates": [0.1, 0.12, 0.9, 0.12, 0.9, 0.16, 0.1, 0.16],
+      "metadata": {}
     }
   ]
 }
@@ -112,68 +89,72 @@ Structured representation of document content.
 ### Base fields
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `element_id` | string | Unique identifier |
-| `type` | string | Element type (see types below) |
-| `sub_type` | string | Element subtype (optional). Examples: Image → `stamp`, `qrcode`, `barcode`, `chart`; Table → `bordered`, `borderless` |
-| `text` | string | Text content |
-| `page_number` | int | Page number (starts at 1) |
-| `coordinates` | array | Four-point coordinates `[x1, y1, x2, y2, x3, y3, x4, y4]` normalized to [0,1] (top-left, top-right, bottom-right, bottom-left) |
-| `metadata` | object | Element metadata (see below) |
-| `objects` | array | Inline objects (requires `include_inline_objects: true`) |
-| `table_structure` | object | Table structure (Table elements only, requires `include_table_structure: true`) |
-| `char_details` | array | Character-level details (requires `include_char_details: true`) |
-| `image_data` | object | Image data (Image elements only, requires `include_image_data: true`) |
+| --- | --- | --- |
+| `element_id` | string | Unique identifier for the element |
+| `type` | string | Element type |
+| `sub_type` | string | Optional subtype |
+| `text` | string | Recognized text |
+| `page_number` | integer | Page number, starting at 1 |
+| `coordinates` | array | Normalized four-point bounding box |
+| `metadata` | object | Element metadata |
+| `objects` | array | Inline objects, returned when `include_inline_objects` is enabled |
+| `table_structure` | object | Structured table data, returned for Table elements when `include_table_structure` is enabled |
+| `char_details` | array | Character-level output, returned when `include_char_details` is enabled |
+| `image_data` | object | Image output, returned for Image elements when `include_image_data` is enabled |
 
 ### Element types
 
 | Type | Description |
-|------|-------------|
+| --- | --- |
 | `Title` | Heading |
 | `NarrativeText` | Body paragraph |
 | `ListItem` | List item |
 | `Table` | Table |
 | `TableCaption` | Table caption |
 | `Image` | Image |
-| `FigureCaption` | Image caption |
-| `Formula` | Math formula (LaTeX format) |
+| `FigureCaption` | Figure caption |
+| `Formula` | Math formula |
 | `Chemical` | Chemical formula |
 | `Header` | Page header |
 | `Footer` | Page footer |
-| `PageNumber` | Page number |
+| `PageNumber` | Printed page number |
 | `PageBreak` | Page break |
-| `CodeSnippet` | Code snippet |
+| `CodeSnippet` | Code block |
 | `UncategorizedText` | Uncategorized text |
 
-**Use for:**
-- Layout analysis
-- Visual grounding (match text to image regions)
-- Citations with coordinates
-- Content extraction by type
-- Building visual overlays
+### `elements.metadata`
 
-**Example: Find all tables**
-```python
-tables = [el for el in elements if el["type"] == "Table"]
+An element's `metadata` object can include structural and relationship fields.
+
+Common fields include:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `parent_id` | string | Parent element identifier |
+| `children_ids` | array | Child element identifiers |
+| `category_depth` | integer | Depth in the heading or section hierarchy |
+| `ref_element_id` | string | Referenced element identifier |
+| `is_continuation` | boolean | Whether this element continues from a previous element |
+| `continuation_of` | string | Identifier of the earlier element this one continues |
+| `has_inline_objects` | boolean | Whether inline objects are present |
+| `inline_object_types` | array | Types of inline objects included in the element |
+| `width` | number | Element width, when returned |
+| `height` | number | Element height, when returned |
+| `data_source` | string | Element source type, when returned |
+
+## Coordinate system
+
+Parse element coordinates are normalized to the page width and height.
+
+Coordinates use eight values:
+
+```text
+[x1, y1, x2, y2, x3, y3, x4, y4]
 ```
 
----
+The points are ordered as:
 
-## Coordinates
-
-Bounding boxes for visual positioning.
-
-### Coordinate system
-
-Coordinates use four-point representation with eight values:
-
-```
-coordinates: [x1, y1, x2, y2, x3, y3, x4, y4]
-```
-
-The four points follow this order:
-
-```
+```text
 (x1,y1) -------- (x2,y2)
    |                |
    |  Element Area  |
@@ -181,345 +162,170 @@ The four points follow this order:
 (x4,y4) -------- (x3,y3)
 ```
 
-Each coordinate value is normalized to `[0, 1]` range (rounded to 6 decimal places), representing the proportion relative to page dimensions.
+Each value is in the range `0` to `1`.
 
-### Convert to pixels
+To convert normalized coordinates to pixel coordinates, multiply x values by the page width and y values by the page height.
 
 ```python
-# Get page dimensions from pages array
-page_width, page_height = 1576, 1683
+page_width = 1576
+page_height = 1683
 
-# Convert normalized coordinates to pixels
-# Top-left point
 x1_px = coordinates[0] * page_width
 y1_px = coordinates[1] * page_height
-
-# Top-right point  
-x2_px = coordinates[2] * page_width
-y2_px = coordinates[3] * page_height
-
-# Bottom-right point
-x3_px = coordinates[4] * page_width
-y3_px = coordinates[5] * page_height
-
-# Bottom-left point
-x4_px = coordinates[6] * page_width
-y4_px = coordinates[7] * page_height
 ```
 
-**Use for:**
-- Drawing bounding boxes on images
-- Source citations with visual links
-- Interactive document viewers
-- Precise element positioning
+## `table_structure`
 
----
-
-## Tables
-
-Tables can be returned in multiple formats.
-
-### table_structure (JSON format)
-
-Enable with `include_table_structure: true`.
+When `include_table_structure` is enabled, Table elements can include structured row, column, and cell data.
 
 ```json
 {
   "type": "Table",
-  "text": "| Name | Age |\n|---|---|\n| John | 28 |",
+  "text": "<table>...</table>",
   "table_structure": {
-    "rows": 2,
+    "rows": 3,
     "cols": 2,
     "cells": [
       {
-        "cell_id": "tbl_001_r1_c1",
+        "cell_id": "cell_1_1",
         "row": 1,
         "col": 1,
         "row_span": 1,
         "col_span": 1,
-        "content_type": "text",
-        "text": "Name",
-        "coordinates": [0.100000, 0.300000, 0.300000, 0.300000, 0.300000, 0.340000, 0.100000, 0.340000]
+        "text": "Product"
       }
     ]
   }
 }
 ```
 
-**Cell fields:**
+### Cell fields
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `cell_id` | string | Unique cell identifier |
-| `row` | int | Row index (starts at 1) |
-| `col` | int | Column index (starts at 1) |
-| `row_span` | int | Rows spanned (for merged cells) |
-| `col_span` | int | Columns spanned (for merged cells) |
-| `content_type` | string | `text`, `formula`, `image`, `mixed` |
-| `text` | string | Cell content |
-| `coordinates` | array | Cell bounding box (four-point coordinates) |
-| `image_datas` | array | Image data array (when `content_type` is `image`, requires `include_image_data`) |
-| `objects` | array | Embedded objects in cell (requires `include_inline_objects`) |
-| `char_details` | array | Character-level details (requires `include_char_details`) |
+| --- | --- | --- |
+| `cell_id` | string | Cell identifier |
+| `row` | integer | Row index |
+| `col` | integer | Column index |
+| `row_span` | integer | Number of rows spanned |
+| `col_span` | integer | Number of columns spanned |
+| `text` | string | Cell text |
+| `coordinates` | array | Cell coordinates, when returned |
+| `content_type` | string | Cell content type, when returned |
+| `image_datas` | array | Image content in the cell, when returned |
+| `objects` | array | Inline objects in the cell, when returned |
+| `char_details` | array | Character-level output for the cell, when returned |
 
-**Use for:**
-- Programmatic table processing
-- Database imports
-- Extracting specific cells
-- Financial report analysis
+Use `table_view: "html"` when Markdown does not preserve the table structure well.
 
-**Example: Extract first column**
-```python
-table = element["table_structure"]
-first_col = [cell["text"] for cell in table["cells"] if cell["col"] == 1]
-```
+## `image_data`
 
----
+When `include_image_data` is enabled, `Image` elements can include extracted image data.
 
-## Pages
-
-Page metadata and element mapping.
-
-Enable with `pages: true`.
-
-```json
-{
-  "pages": [
-    {
-      "page_number": 1,
-      "page_width": 1576,
-      "page_height": 1683,
-      "page_image_url": "https://example.com/page-1.jpg",
-      "element_ids": ["el_001", "el_002", "el_003"],
-      "dpi": 144,
-      "angle": 0
-    }
-  ]
-}
-```
+Common fields include:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `page_number` | int | Page number |
-| `page_width` | int | Width in pixels |
-| `page_height` | int | Height in pixels |
-| `page_image_url` | string | Rendered page image URL |
-| `element_ids` | array | Elements on this page (in reading order) |
-| `dpi` | int | Resolution used for rendering |
-| `angle` | int | Rotation angle (0, 90, 180, 270) |
+| --- | --- | --- |
+| `image_url` | string | URL for the extracted image |
+| `mime_type` | string | MIME type |
+| `base64` | string | Base64-encoded image data, when returned |
 
-**Use for:**
-- Page-level citations
-- Document preview generation
-- Converting coordinates to pixels
-- Page-by-page processing
+## `char_details`
 
----
+When `include_char_details` is enabled, elements can include character-level details.
 
-## Title tree
-
-Hierarchical table of contents.
-
-Enable with `title_tree: true`.
-
-```json
-{
-  "title_tree": [
-    {
-      "element_id": "el_001",
-      "title": "Chapter 1: Introduction",
-      "level": 1,
-      "page_number": 1,
-      "children": [
-        {
-          "element_id": "el_005",
-          "title": "1.1 Background",
-          "level": 2,
-          "page_number": 2,
-          "children": []
-        }
-      ]
-    }
-  ]
-}
-```
+Common fields include:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `element_id` | string | ID of the Title element |
-| `title` | string | Heading text |
-| `level` | int | Heading level (1 = top level) |
-| `page_number` | int | Page where heading appears |
-| `children` | array | Nested child headings |
+| --- | --- | --- |
+| `index` | integer | Character index in the element |
+| `text` | string | Character text |
+| `coordinates` | array | Character coordinates |
+| `recognition.confidence` | number | Character confidence score |
+| `recognition.candidates` | array | Candidate recognition results, when returned |
 
-**Use for:**
-- Document navigation UI
-- Section-based chunking for RAG
-- Generating table of contents
-- Understanding document structure
+## `objects`
 
----
+When `include_inline_objects` is enabled, elements can include inline objects such as formulas, checkboxes, handwriting, or inline images.
 
-## Hierarchical relationships
-
-Enable with `include_hierarchy: true` (default).
-
-Elements include relationship fields in `metadata`:
-
-```json
-{
-  "element_id": "el_001",
-  "type": "Title",
-  "metadata": {
-    "parent_id": null,
-    "children_ids": ["el_002", "el_003"],
-    "category_depth": 0,
-    "is_continuation": false,
-    "has_inline_objects": false,
-    "width": 800,
-    "height": 600
-  }
-}
-```
-
-### metadata fields
+Common fields include:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `parent_id` | string | Parent element ID (null for root) |
-| `children_ids` | array | List of child element IDs |
-| `category_depth` | int | Nesting level for same-type elements (e.g., Title: 0=H1, 1=H2) |
-| `ref_element_id` | string | Referenced element ID (for captions linking to tables/images) |
-| `is_continuation` | boolean | Whether element continues from previous page |
-| `continuation_of` | string | Element ID of the previous part (when `is_continuation=true`) |
-| `has_inline_objects` | boolean | Whether element contains inline objects (requires `include_inline_objects: true`) |
-| `inline_object_types` | array | Types of inline objects, e.g., `["formula", "handwriting"]` |
-| `width` | int | Image width in pixels (Image elements only) |
-| `height` | int | Image height in pixels (Image elements only) |
-| `data_source` | object | Data source details (see structure below) |
+| --- | --- | --- |
+| `object_id` | string | Object identifier |
+| `type` | string | Object type |
+| `text_range` | object | Start and end positions in the parent text |
+| `image_data` | object | Object image payload, when returned |
+| `metadata.display_mode` | string | Display mode metadata, when returned |
 
-**data_source structure:**
+## `title_tree`
 
-```json
-{
-  "record_locator": {
-    "protocol": "file",
-    "remote_file_path": "/path/to/document.pdf"
-  },
-  "url": "file:///path/to/document.pdf"
-}
-```
+The `title_tree` field is returned when the `title_tree` capability is enabled.
 
-**Use for:**
-- Building content trees
-- Preserving context in RAG chunks
-- Understanding document structure
-- Associating captions with tables/images
-- Handling cross-page elements
+Use it to build:
 
----
+- Table of contents
+- Section navigation
+- Structure-aware chunks
 
-## Common patterns
+## `pages`
 
-### Build citations
+The `pages` field is returned when the `pages` capability is enabled.
 
-```python
-def build_citation(element):
-    return {
-        "text": element["text"],
-        "page": element["page_number"],
-        "bbox": element["coordinates"]
-    }
+Each item in `pages` can include:
 
-citations = [build_citation(el) for el in elements]
-```
+| Field | Type | Description |
+| --- | --- | --- |
+| `page_number` | integer | Page number, starting at 1 |
+| `page_width` | integer | Page width |
+| `page_height` | integer | Page height |
+| `angle` | integer | Page rotation angle |
+| `element_ids` | array | Element identifiers on the page |
+| `page_image_url` | string | Page image URL, when returned |
+| `dpi` | integer | Page DPI value, when available |
+| `status` | string | Page processing status |
 
-### Extract all tables
+## `summary`
 
-```python
-tables = [
-    el for el in elements 
-    if el["type"] == "Table"
-]
+The `summary` object contains processing metrics.
 
-# Get table content
-for table in tables:
-    if "table_structure" in table:
-        rows = table["table_structure"]["rows"]
-        cols = table["table_structure"]["cols"]
-        print(f"Table: {rows}x{cols}")
-```
+Common metrics include:
 
-### Find text on specific page
+| Field | Type | Description |
+| --- | --- | --- |
+| `duration_ms` | integer | Total processing time in milliseconds |
 
-```python
-page_2_elements = [
-    el for el in elements 
-    if el["page_number"] == 2
-]
-```
+## Parse-specific errors
 
-### Get formulas
+Most authentication, file, and request validation errors are shared across Parse and Extract. See [Errors](/xparse/errors) for the full common error reference.
 
-```python
-formulas = [
-    el for el in elements 
-    if el["type"] == "Formula"
-]
-
-# Or inline formulas (requires include_inline_objects: true)
-inline_formulas = []
-for el in elements:
-    if "objects" in el:
-        inline_formulas.extend([
-            obj for obj in el["objects"] 
-            if obj["type"] == "formula"
-        ])
-```
-
----
-
-## Error handling
-
-When `code` is not 200, the request failed:
-
-```json
-{
-  "code": 40004,
-  "message": "Parameter error",
-  "location": {
-    "stage": "parse",
-    "page_number": 3
-  }
-}
-```
-
-### Common error codes
+The following error is specific to Parse:
 
 | Code | Description | Solution |
-|------|-------------|----------|
-| 40101 | Missing credentials | Include `x-ti-app-id` and `x-ti-secret-code` headers |
-| 40102 | Invalid credentials | Verify credentials in console |
-| 40302 | File too large | Use async API or reduce file size |
-| 40423 | Wrong password | Check PDF password |
-| 40424 | Invalid page range | Verify `page_range` parameter |
+| --- | --- | --- |
+| `40427` | Unsupported DPI value | Use a supported DPI setting, or remove the DPI parameter if it is not required. |
 
-See [API Reference](/api-reference/endpoint/xparse/v1/parse-sync) for complete error code list.
+## Special notes for the GUI engine
 
----
+When you use the GUI recognition engine, some element types, metadata fields, and object structures may differ from standard document parsing output.
+
+If your integration depends on GUI-specific output, validate the response structure against the GUI engine results directly rather than assuming it matches the standard Parse output exactly.
 
 ## Related resources
 
-<CardGroup cols={3}>
-  <Card title="Quickstart" icon="rocket" href="/xparse/v1/quickstart">
-    Parse your first document
+<CardGroup cols={2}>
+  <Card title="Parse Quickstart" icon="rocket" href="/xparse/parse/quickstart">
+    Parse your first document.
   </Card>
 
-  <Card title="Configuration" icon="sliders" href="/xparse/v1/configuration">
-    Control what data is returned
+  <Card title="Configuration" icon="sliders" href="/xparse/parse/configuration">
+    Customize parsing behavior.
   </Card>
 
-  <Card title="Examples" icon="book-open" href="/xparse/v1/examples">
-    See response format in action
+  <Card title="Async Processing" icon="clock" href="/xparse/parse/async-processing">
+    Process large documents asynchronously.
+  </Card>
+
+  <Card title="Errors" icon="triangle-exclamation" href="/xparse/errors">
+    Review common error codes.
   </Card>
 </CardGroup>

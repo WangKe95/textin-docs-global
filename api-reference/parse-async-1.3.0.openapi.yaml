@@ -10,7 +10,7 @@ info:
     name: TextIn API Team
 
 servers:
-  - url: https://api.textin.com
+  - url: https://api.textin.ai
     description: Production Environment
 
 security:
@@ -166,7 +166,7 @@ paths:
                       job_id: "c020a1f03c994091a94d6763cdbe0684"
                       file_id: "00c685bad97544609d3607885d76bdc4"
                       status: "completed"
-                      result_url: "https://web-api.textin.com/file/xparse_result/xxx"
+                      result_url: "https://web-api.textin.ai/file/xparse_result/xxx"
                 failed:
                   summary: Failed
                   value:
@@ -374,7 +374,7 @@ components:
             Result download URL (returned only when status is completed)
 
             The parsing result can be downloaded via this URL. The result format is consistent with the synchronous API.
-          example: "https://web-api.textin.com/file/xparse_result/xxx"
+          example: "https://web-api.textin.ai/file/xparse_result/xxx"
         message:
           type: string
           description: Error message (returned only when status is failed)

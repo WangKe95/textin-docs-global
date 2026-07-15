@@ -22,38 +22,34 @@ Both Parse and Extract support the following file types.
 
 ### Image dimensions
 
-Aspect ratio is calculated by dividing the longer side of the image by the shorter side.
+#### Parse
 
 | Image aspect ratio | Allowed dimensions |
 | --- | --- |
 | Below 2 | Width and height must each be between 20 and 20,000 pixels |
 | 2 or greater | Width and height must each be between 20 and 10,000 pixels |
 
-### Supported image formats
+#### Extract
 
-PNG, JPEG, WebP, BMP, and TIFF are supported.
+| Image aspect ratio | Allowed dimensions |
+| --- | --- |
+| Below 2 | Width and height must each be between 20 and 20,000 pixels |
+| 2 or greater | Width and height must each be between 20 and 10,000 pixels |
 
-### Image quality recommendations
-
-For more reliable recognition results:
-
-- Use clear images with text that is legible at the original image size.
-- Avoid heavy compression, motion blur, glare, and low contrast.
-- Keep the full document page visible whenever possible.
-- Rotate images to the correct orientation before uploading.
-- Use `crop_dewarp` when photographed pages are skewed, curved, or distorted.
+<Note>
+  Aspect ratio is calculated by dividing the longer side of the image by the shorter side.
+</Note>
 
 ## PDF requirements
 
 ### Digital PDFs
 
-When embedded text is available, xParse can extract it directly instead of applying OCR to the entire page.
+When embedded text is available, xParse can extract it directly instead of applying OCR to the file.
 
 Digital PDFs generally provide:
 
 - Faster processing
 - More reliable text extraction
-- Better preservation of text order and document structure
 
 The quality of tables and layouts may still vary depending on how the PDF was generated.
 
@@ -61,7 +57,7 @@ The quality of tables and layouts may still vary depending on how the PDF was ge
 
 OCR is applied automatically to image-based or scanned pages.
 
-Use optional preprocessing settings only when they match the document:
+Use optional parameters only when they match the document:
 
 - Enable `crop_dewarp` for rotated, curved, or skewed pages.
 - Enable `remove_watermark` when visible watermarks interfere with text recognition.
@@ -80,12 +76,12 @@ Office files are converted or normalized before parsing. This may add processing
 | File type | Processing behavior |
 | --- | --- |
 | Word | The document is converted before parsing. Most text, images, and layout information are preserved when possible. |
-| Excel | Each worksheet is processed separately. Tables retain row, column, and cell information when table structure is enabled. Formulas may be returned as text. |
-| PowerPoint | Each slide is processed as a separate page. Text and images are included in the output. Speaker notes are included when available. |
+| Excel | Only worksheets with fewer than 2,000 rows are supported. Each worksheet is processed separately. Tables retain row, column, and cell information when table structure is enabled. Formulas may be returned as text. |
+| PowerPoint | Each slide is processed as a separate page. Text and images are included in the output. |
 
-Complex Office files with many embedded objects, external links, macros, or unsupported elements may take longer to process or fail during requests.
+Complex Office files with many embedded objects, external links, macros, or unsupported elements may take longer to process or the request may fail.
 
-If request fails:
+If the request fails:
 
 1. Remove unnecessary embedded objects.
 2. Save the file in a newer Office format.
@@ -100,18 +96,21 @@ Processing limits vary by account type, processing mode, and API type.
 - **Concurrency limits** determine how many Parse or Extract jobs can run at the same time.
 - **Processing time limit** is the maximum amount of time allowed for a single request or job.
 
-| Account type | Maximum pages per synchronous request | Maximum pages per asynchronous job | Maximum file size per request or job | Parse concurrency | Extract concurrency |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Free | 100 | 100 | 100 MB | 1 | 1 |
-| Paid | 500 | 2,000 | 500 MB | 5 | 2 |
-| Enterprise | 500 | 5,000 | 500 MB | 10+ | 5 |
+| Limit | Free | Paid | Enterprise |
+| --- | ---: | ---: | ---: |
+| Maximum pages per synchronous request | 100 | 500 | 500 |
+| Maximum pages per asynchronous job | 100 | 2,000 | 5,000 |
+| Parse: maximum file size per request or job | 100 MB | 500 MB | 500 MB |
+| Extract: maximum file size per request | 50 MB | 50 MB | 50 MB |
+| Parse concurrency | 1 | 5 | 10+ |
+| Extract concurrency | 1 | 2 | 5 |
 
 All synchronous requests and asynchronous jobs have a maximum processing time of **10 minutes**.
 
 ### How the limits are applied
 
 - **Maximum pages** is the number of pages allowed in a single synchronous request or asynchronous job.
-- **Maximum file size** is the size of the uploaded file before processing.
+- **Maximum file size** is the size of the uploaded file before processing. Parse and Extract can use different limits.
 - **Concurrency** is the maximum number of jobs that can be processed at the same time.
 - Requests submitted after the concurrency limit is reached may be queued or rejected, depending on the endpoint and account configuration.
 - Enterprise Parse concurrency can be increased beyond 10 based on workload requirements and the service agreement.
@@ -122,7 +121,7 @@ If a document exceeds the page or file size limit:
 
 1. Use the `page_range` parameter to process selected page ranges separately.
 2. Use the asynchronous API when the document exceeds the synchronous page limit.
-3. Split the document into smaller files when it exceeds the asynchronous page limit or the 500 MB file size limit.
+3. Split the document into smaller files when it exceeds the asynchronous page limit or the file size limit for the current endpoint.
 4. Upgrade your plan or contact TextIn support if you need higher page or concurrency limits.
 
 ### Choose between synchronous and asynchronous processing
@@ -131,16 +130,17 @@ Use the synchronous API when:
 
 - The document is within the synchronous page and file size limits.
 - You need the result returned in the same request.
-- The document is expected to finish processing as soon as possible.
 
 Use the asynchronous API when:
 
 - The document exceeds the synchronous page limit.
 - You are processing large or complex documents.
 - You are submitting multiple documents in batches.
-- You want to retrieve the result later through polling or a callback.
+- You want to retrieve the result later through polling or a webhook.
 
-> The asynchronous API supports more pages per job, but it does not increase the 500 MB file size limit or the 10-minute processing time limit.
+<Note>
+  The asynchronous API supports more pages per job, but it does not increase the file size limit or the 10-minute processing time limit for the current endpoint.
+</Note>
 
 ## Related resources
 

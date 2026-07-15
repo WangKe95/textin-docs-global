@@ -15,13 +15,13 @@ This guide shows you how to import and debug the Document Extraction API using P
 ## cURL Command Example
 
 ```bash
-curl -X POST 'https://api.textin.com/ai/service/v3/entity_extraction' \
+curl -X POST 'https://api.textin.ai/ai/service/v3/entity_extraction' \
   --header 'x-ti-app-id: YOUR_APP_ID' \
   --header 'x-ti-secret-code: YOUR_SECRET_CODE' \
   --header 'Content-Type: application/json' \
   --data '{
     "file": {
-      "file_url": "https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
+      "file_url": "https://web-api.textin.ai/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
     },
     "schema": {
       "type": "object",
@@ -87,7 +87,7 @@ The core of the Document Extraction API is the JSON schema configuration. You ca
 ```json
 {
   "file": {
-    "file_url": "https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
+    "file_url": "https://web-api.textin.ai/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
   },
   ...
 }

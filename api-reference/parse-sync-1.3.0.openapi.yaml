@@ -8,7 +8,7 @@ info:
     name: TextIn API Team
 
 servers:
-  - url: https://api.textin.com
+  - url: https://api.textin.ai
     description: Production Environment
 
 security:

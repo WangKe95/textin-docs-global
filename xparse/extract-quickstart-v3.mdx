@@ -152,7 +152,7 @@ You can also reference the following sample files and code to quickly validate a
 ### Sample File
 
 <Tip>
-  Here's an official Textin sample image you can download: [Extract Sample PNG.png](https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726)
+  Here's an official Textin sample image you can download: [Extract Sample PNG.png](https://web-api.textin.ai/open/image/download?filename=54efc36a05cf475aa6b39137b0717726)
 
   ![Extract Sample Image](/images/sample_image.webp)
 </Tip>
@@ -170,12 +170,12 @@ To use the Document Extraction API, you first need to obtain an API Key. See the
 ```python
 import requests
 
-url = "https://api.textin.com/ai/service/v3/entity_extraction"
+url = "https://api.textin.ai/ai/service/v3/entity_extraction"
 
 payload = {
     # File to extract
     "file": {
-        "file_url": "https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
+        "file_url": "https://web-api.textin.ai/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
     },
     # Define extraction schema
     "schema": {

@@ -1,135 +1,262 @@
 ---
 title: "Response Format"
-description: "Understand extraction output structure"
+description: "Understand the Extract response format."
 ---
 
-Every extraction response returns structured JSON matching your schema, plus citations showing where data came from.
+The Extract response returns top-level request metadata and a `result` object. The `result` object contains the extracted data in `extracted_schema` and can also include citations, page-level fields, stamp results, and usage metadata.
 
-## Response structure
+## Top-level response
+
+The `entity_extraction` endpoint returns the following top-level structure:
 
 ```json
 {
   "code": 200,
-  "message": "success",
-  "data": {
-    "extracted_data": {...},
-    "citations": [...]
-  }
+  "message": "Success",
+  "status": "finished",
+  "version": "v3.x.x",
+  "duration": 28450,
+  "part_durations": {
+    "parse_duration": 0,
+    "doc_cvt_duration": 48,
+    "retrieve_duration": 0,
+    "prompt_duration": 0,
+    "llm_duration": 26950,
+    "format_duration": 12
+  },
+  "result": {
+    "extracted_schema": {},
+    "pages": [
+      {
+        "height": 1584,
+        "width": 1224,
+        "angle": 0,
+        "status": "Success",
+        "durations": 0,
+        "page_number": 1,
+        "image_id": ""
+      }
+    ],
+    "stamps": [],
+    "success_count": 1,
+    "usage": {
+      "acgpt_request_number": 3,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "request_number": 0,
+      "acgpt_prompt_tokens": 4200,
+      "acgpt_completion_tokens": 120,
+      "acgpt_total_tokens": 4320
+    }
+  },
+  "x_request_id": "req_example_id"
 }
 ```
 
 ### Top-level fields
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `code` | int | HTTP status code (200 = success) |
-| `message` | string | Status message |
-| `data` | object | Extraction results |
+| --- | --- | --- |
+| `code` | integer | Business-level response code returned by the service |
+| `message` | string | Response message |
+| `status` | string | Request status, such as `finished` |
+| `version` | string | Extract service version |
+| `duration` | integer | Total processing time reported by the service, in milliseconds |
+| `part_durations` | object | Timing breakdown for internal processing stages |
+| `result` | object | Extraction result object |
+| `x_request_id` | string | Request identifier returned with every response |
 
----
+### part_durations fields
 
-## Extracted data
+Observed fields in `part_durations` include:
 
-JSON matching your schema structure:
+| Field | Type | Description |
+| --- | --- | --- |
+| `parse_duration` | integer | Parse stage duration |
+| `doc_cvt_duration` | integer | Document conversion duration |
+| `retrieve_duration` | integer | Retrieval stage duration |
+| `prompt_duration` | integer | Prompt preparation duration |
+| `llm_duration` | integer | LLM inference duration |
+| `format_duration` | integer | Output formatting duration |
+
+All duration values are reported in milliseconds.
+
+## The result object
+
+The result object can include the following fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `extracted_schema` | object | Structured data returned according to your schema |
+| `citations` | object | Field-level source citations, returned when citation output is enabled |
+| `pages` | array | Page-level processing metadata |
+| `stamps` | array | Stamp results, returned when stamp output is enabled |
+| `success_count` | integer | Number of pages processed successfully |
+| `usage` | object | Usage metadata returned by the service |
+
+## The extracted_schema object
+
+The `result.extracted_schema` object contains the extracted data in the structure defined by your schema.
+
+### Field behavior
+
+- String fields that cannot be extracted may be returned as empty strings.
+- Array fields that cannot be extracted may be returned as empty arrays.
+- The current response format does not force missing fields to return `null`.
+- Number and integer fields are returned according to the schema type when a value is extracted successfully.
+- Enum fields return one of the predefined values defined in the schema when a value is extracted successfully.
+
+### Example: full response with extracted_schema
 
 ```json
 {
-  "extracted_data": {
-    "invoice_number": "INV-2024-001",
-    "invoice_date": "2024-01-15",
-    "vendor_name": "Acme Corp",
-    "total_amount": 1250.00,
-    "line_items": [
+  "code": 200,
+  "message": "Success",
+  "status": "finished",
+  "version": "v3.x.x",
+  "duration": 28450,
+  "part_durations": {
+    "parse_duration": 0,
+    "doc_cvt_duration": 48,
+    "retrieve_duration": 0,
+    "prompt_duration": 0,
+    "llm_duration": 26950,
+    "format_duration": 12
+  },
+  "result": {
+    "extracted_schema": {
+      "purchase_order": "PO-100045",
+      "purchase_date": "2026-02-10",
+      "total": "$1,250.00",
+      "vendor_name": "Example Supplier Inc.",
+      "ship_to_name": "Example Distribution Center"
+    },
+    "pages": [
       {
-        "description": "Product A",
-        "quantity": 5,
-        "price": 250.00
-      },
-      {
-        "description": "Product B",
-        "quantity": 2,
-        "price": 500.00
+        "height": 1584,
+        "width": 1224,
+        "angle": 0,
+        "status": "Success",
+        "durations": 0,
+        "page_number": 1,
+        "image_id": ""
       }
-    ]
-  }
+    ],
+    "stamps": [],
+    "success_count": 1,
+    "usage": {
+      "acgpt_request_number": 3,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "request_number": 0,
+      "acgpt_prompt_tokens": 4200,
+      "acgpt_completion_tokens": 120,
+      "acgpt_total_tokens": 4320
+    }
+  },
+  "x_request_id": "req_example_id"
 }
 ```
-
-**Field behavior:**
-- Missing or unextractable fields return `null`
-- Arrays return empty `[]` if no matches found
-- Numbers are parsed as `float` or `int` based on schema type
-- Enums return the exact value from your predefined list
-
----
 
 ## Citations
 
-Source locations for each extracted field. Citations are returned as an **object** keyed by field name:
+The `result.citations` object identifies the source location of extracted values.
+
+When citation output is enabled, the response can include a `citations` object keyed by field name.
+
+### Example: full response with citations
 
 ```json
 {
-  "citations": {
-    "invoice_number": {
-      "value": "INV-2024-001",
-      "bounding_regions": [
-        {
-          "page_number": 1,
-          "position": [137, 599, 1129, 599, 1129, 625, 182, 625],
-          "text": "INV-2024-001"
-        }
-      ]
+  "code": 200,
+  "message": "Success",
+  "status": "finished",
+  "version": "v3.x.x",
+  "duration": 28450,
+  "part_durations": {
+    "parse_duration": 0,
+    "doc_cvt_duration": 48,
+    "retrieve_duration": 0,
+    "prompt_duration": 0,
+    "llm_duration": 26950,
+    "format_duration": 12
+  },
+  "result": {
+    "extracted_schema": {
+      "purchase_order": "PO-100045"
     },
-    "total_amount": {
-      "value": "1250.00",
-      "bounding_regions": [
-        {
-          "page_number": 2,
-          "position": [812, 802, 878, 802, 878, 843, 812, 843],
-          "text": "1250.00"
-        }
-      ]
+    "citations": {
+      "purchase_order": {
+        "value": "PO-100045",
+        "bounding_regions": [
+          {
+            "page_number": 1,
+            "position": [326, 478, 638, 478, 638, 521, 326, 521],
+            "text": "PO-100045"
+          }
+        ],
+        "llm_confidence": 0.97,
+        "llm_confidence_level": "high"
+      }
+    },
+    "pages": [
+      {
+        "height": 1584,
+        "width": 1224,
+        "angle": 0,
+        "status": "Success",
+        "durations": 0,
+        "page_number": 1,
+        "image_id": ""
+      }
+    ],
+    "stamps": [],
+    "success_count": 1,
+    "usage": {
+      "acgpt_request_number": 3,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "request_number": 0,
+      "acgpt_prompt_tokens": 4200,
+      "acgpt_completion_tokens": 120,
+      "acgpt_total_tokens": 4320
     }
-  }
+  },
+  "x_request_id": "req_example_id"
 }
 ```
 
-### Citation structure
-
-Each field in `citations` contains:
+### Citation fields
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `value` | string | Extracted value for this field |
-| `bounding_regions` | array | Array of regions where this field was found |
+| --- | --- | --- |
+| `value` | string | Extracted value for the field |
+| `llm_confidence` | number | LLM confidence score, when available |
+| `llm_confidence_level` | string | Confidence label, when available |
+| `bounding_regions` | array | Source regions used for the extracted value |
 
 ### Bounding region fields
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `page_number` | int | Page number (starts at 1) |
-| `text` | string | Original text from document |
-| `position` | array | Four-point bounding box in **pixel coordinates** `[x1, y1, x2, y2, x3, y3, x4, y4]` |
+| --- | --- | --- |
+| `page_number` | integer | Page number, starting at 1 |
+| `text` | string | Source text used for the citation |
+| `position` | array | Four-point bounding box in pixel coordinates |
 
-**Use for:**
-- Verifying extraction accuracy
-- Highlighting fields in UI
-- Building audit trails
-- Visual grounding
+### Coordinate format
 
----
+Citation positions use four-point bounding boxes:
 
-## Coordinates
-
-Bounding boxes use four-point representation with eight values in **pixel coordinates**:
-
-```
-position: [x1, y1, x2, y2, x3, y3, x4, y4]
+```text
+[x1, y1, x2, y2, x3, y3, x4, y4]
 ```
 
-The four points follow this order:
+The four points are ordered as:
 
-```
+```text
 (x1,y1) -------- (x2,y2)
    |                |
    |  Field Area    |
@@ -137,347 +264,120 @@ The four points follow this order:
 (x4,y4) -------- (x3,y3)
 ```
 
-**Coordinate format:**
-- Eight integer values representing pixel positions
-- Points ordered: top-left, top-right, bottom-right, bottom-left
-- Example: `[137, 599, 1129, 599, 1129, 625, 182, 625]`
+## Pages
 
-### Use coordinates
+The `result.pages` field contains page-level processing metadata.
 
-```python
-# Extract position from citation
-citation = result.citations["invoice_number"]
-position = citation["bounding_regions"][0]["position"]
+Observed page fields include:
 
-# Get four corner points (already in pixels)
-x1, y1 = position[0], position[1]  # Top-left
-x2, y2 = position[2], position[3]  # Top-right
-x3, y3 = position[4], position[5]  # Bottom-right
-x4, y4 = position[6], position[7]  # Bottom-left
+| Field | Type | Description |
+| --- | --- | --- |
+| `page_number` | integer | Page number, starting at 1 |
+| `width` | integer | Page width in pixels |
+| `height` | integer | Page height in pixels |
+| `angle` | integer | Page rotation angle reported by the service |
+| `status` | string | Page processing status, such as `Success` |
+| `image_id` | string | Internal page image identifier; may be an empty string |
+| `durations` | number | Page processing duration reported by the service, in milliseconds |
 
-# Calculate bounding box dimensions
-width = x2 - x1
-height = y3 - y1
-```
-
----
-
-## Error handling
-
-When extraction fails:
+### Example: pages metadata
 
 ```json
 {
-  "code": 40004,
-  "message": "Parameter error: Invalid schema structure"
+  "pages": [
+    {
+      "height": 1584,
+      "width": 1224,
+      "angle": 0,
+      "status": "Success",
+      "durations": 0,
+      "page_number": 1,
+      "image_id": ""
+    }
+  ]
 }
 ```
 
-### Common errors
+## Stamps
+
+The `result.stamps` field is returned as an array when stamp output is enabled.
+
+If no stamps are detected, the field may be returned as an empty array:
+
+```json
+{
+  "stamps": []
+}
+```
+
+When stamp results are returned, each item can include the following fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `color` | string | Stamp color |
+| `position` | array | Four-point bounding box for the stamp |
+| `stamp_shape` | string | Stamp shape |
+| `type` | string | Stamp type |
+| `value` | string | Recognized stamp text |
+
+## Usage
+
+The `result.usage` field contains usage metadata returned by the service.
+
+Observed fields include:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `acgpt_request_number` | integer | Number of internal ACGPT requests |
+| `prompt_tokens` | integer | Prompt token count for the standard path |
+| `completion_tokens` | integer | Completion token count for the standard path |
+| `total_tokens` | integer | Total token count for the standard path |
+| `request_number` | integer | Number of requests for the standard path |
+| `acgpt_prompt_tokens` | integer | Prompt token count for the ACGPT path |
+| `acgpt_completion_tokens` | integer | Completion token count for the ACGPT path |
+| `acgpt_total_tokens` | integer | Total token count for the ACGPT path |
+
+### Example: usage metadata
+
+```json
+{
+  "usage": {
+    "acgpt_request_number": 3,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "request_number": 0,
+    "acgpt_prompt_tokens": 4200,
+    "acgpt_completion_tokens": 120,
+    "acgpt_total_tokens": 4320
+  }
+}
+```
+
+## Extract-specific errors
+
+Most authentication, file, and request validation errors are shared across Parse and Extract. See [Errors](/xparse/errors) for the full common error reference.
+
+The following errors are specific to Extract:
 
 | Code | Description | Solution |
-|------|-------------|----------|
-| 40004 | Invalid schema | Check schema syntax and structure |
-| 40101 | Missing credentials | Include authentication headers |
-| 40102 | Invalid credentials | Verify app ID and secret code |
-| 40302 | File too large | Reduce file size or use Parse API first |
-
-See [Errors](/api-reference/endpoint/xparse/v1/errors) for complete error code list.
-
----
-
-## Example responses
-
-### Simple fields
-
-**Schema:**
-```json
-{
-  "type": "object",
-  "properties": {
-    "name": {"type": "string"},
-    "age": {"type": "number"}
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "extracted_data": {
-    "name": "John Doe",
-    "age": 28
-  },
-  "citations": {
-    "name": {
-      "value": "John Doe",
-      "bounding_regions": [
-        {
-          "page_number": 1,
-          "position": [100, 200, 300, 200, 300, 240, 100, 240],
-          "text": "John Doe"
-        }
-      ]
-    },
-    "age": {
-      "value": "28",
-      "bounding_regions": [
-        {
-          "page_number": 1,
-          "position": [400, 200, 450, 200, 450, 240, 400, 240],
-          "text": "28"
-        }
-      ]
-    }
-  }
-}
-```
-
----
-
-### Array fields
-
-**Schema:**
-```json
-{
-  "type": "object",
-  "properties": {
-    "colors": {
-      "type": "array",
-      "items": {"type": "string"}
-    }
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "extracted_data": {
-    "colors": ["Red", "Blue", "Green"]
-  },
-  "citations": {
-    "colors[0]": {
-      "value": "Red",
-      "bounding_regions": [
-        {
-          "page_number": 1,
-          "position": [150, 300, 220, 300, 220, 340, 150, 340],
-          "text": "Red"
-        }
-      ]
-    },
-    "colors[1]": {
-      "value": "Blue",
-      "bounding_regions": [
-        {
-          "page_number": 1,
-          "position": [250, 300, 320, 300, 320, 340, 250, 340],
-          "text": "Blue"
-        }
-      ]
-    }
-  }
-}
-```
-
----
-
-### Table (array of objects)
-
-**Schema:**
-```json
-{
-  "type": "object",
-  "properties": {
-    "items": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "product": {"type": "string"},
-          "qty": {"type": "number"}
-        }
-      }
-    }
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "extracted_data": {
-    "items": [
-      {"product": "Widget A", "qty": 5},
-      {"product": "Widget B", "qty": 3}
-    ]
-  },
-  "citations": {
-    "items[0].product": {
-      "value": "Widget A",
-      "bounding_regions": [
-        {
-          "page_number": 1,
-          "position": [100, 400, 250, 400, 250, 440, 100, 440],
-          "text": "Widget A"
-        }
-      ]
-    },
-    "items[0].qty": {
-      "value": "5",
-      "bounding_regions": [
-        {
-          "page_number": 1,
-          "position": [300, 400, 350, 400, 350, 440, 300, 440],
-          "text": "5"
-        }
-      ]
-    }
-  }
-}
-```
-
----
-
-### Nested objects
-
-**Schema:**
-```json
-{
-  "type": "object",
-  "properties": {
-    "vendor": {
-      "type": "object",
-      "properties": {
-        "name": {"type": "string"},
-        "address": {"type": "string"}
-      }
-    }
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "extracted_data": {
-    "vendor": {
-      "name": "Acme Corp",
-      "address": "123 Main St"
-    }
-  },
-  "citations": {
-    "vendor.name": {
-      "value": "Acme Corp",
-      "bounding_regions": [
-        {
-          "page_number": 1,
-          "position": [100, 500, 280, 500, 280, 540, 100, 540],
-          "text": "Acme Corp"
-        }
-      ]
-    },
-    "vendor.address": {
-      "value": "123 Main St",
-      "bounding_regions": [
-        {
-          "page_number": 1,
-          "position": [100, 560, 300, 560, 300, 600, 100, 600],
-          "text": "123 Main St"
-        }
-      ]
-    }
-  }
-}
-```
-
----
-
-## Common patterns
-
-### Verify extraction accuracy
-
-```python
-result = client.extract.run(file=f, schema=schema)
-
-# Check if required fields were extracted
-if result.extracted_data.get("invoice_number") is None:
-    print("Warning: Invoice number not found")
-
-# Check citations for a specific field
-if "total_amount" in result.citations:
-    citation = result.citations["total_amount"]
-    print(f"Extracted value: {citation['value']}")
-    for region in citation["bounding_regions"]:
-        print(f"Found on page {region['page_number']}")
-        print(f"Original text: {region['text']}")
-```
-
----
-
-### Build audit trail
-
-```python
-# Store extraction with source information
-audit_record = {
-    "document_id": "doc123",
-    "extracted_at": datetime.now(),
-    "data": result.extracted_data,
-    "sources": {
-        field: {
-            "value": citation["value"],
-            "regions": [
-                {
-                    "page": region["page_number"],
-                    "text": region["text"]
-                }
-                for region in citation["bounding_regions"]
-            ]
-        }
-        for field, citation in result.citations.items()
-    }
-}
-```
-
----
-
-### Highlight fields in UI
-
-```python
-# Convert citations to UI overlay coordinates
-def build_highlights(citations):
-    highlights = []
-    for field_name, citation in citations.items():
-        for region in citation["bounding_regions"]:
-            position = region["position"]
-            highlights.append({
-                "field": field_name,
-                "page": region["page_number"],
-                "bbox": {
-                    "x": position[0],      # Already in pixels
-                    "y": position[1],
-                    "width": position[2] - position[0],
-                    "height": position[5] - position[1]
-                }
-            })
-    return highlights
-```
-
----
+| --- | --- | --- |
+| `40306` | QPS limit exceeded | Reduce request rate or request a higher limit. |
+| `50011` | LLM connection failed | Retry the request. Contact support if the problem persists. |
+| `50012` | LLM engine failed | Retry the request. Contact support if the problem persists. |
 
 ## Related resources
 
 <CardGroup cols={3}>
+  <Card title="Extract Quickstart" icon="rocket" href="/xparse/extract/quickstart">
+    Extract your first document.
+  </Card>
+
   <Card title="Schema Guide" icon="book" href="/xparse/extract/schema-guide">
-    Create extraction schemas
+    Create extraction schemas.
   </Card>
-  
-  <Card title="Best Practices" icon="lightbulb" href="/xparse/extract/best-practices">
-    Improve extraction accuracy
-  </Card>
-  
-  <Card title="API Reference" icon="code" href="/api-reference/endpoint/extract-v3">
-    Complete API documentation
+
+  <Card title="Errors" icon="triangle-exclamation" href="/xparse/errors">
+    Review common error codes.
   </Card>
 </CardGroup>

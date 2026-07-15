@@ -1,11 +1,15 @@
 ---
 title: "Configuration"
-description: "Customize parsing behavior to match your use case"
+description: "Customize parsing behavior and choose which output fields Parse returns."
 ---
 
-Control what data is returned and how documents are processed through configuration parameters.
+Use configuration options when the default output is not enough for your workflow. Enable options based on the document characteristics and the output your application requires.
 
-## Configuration overview
+<Note>
+  Enabling every option does not necessarily improve the result. Some options increase response size or processing time.
+</Note>
+
+## Configuration object
 
 ```json
 {
@@ -27,457 +31,238 @@ Control what data is returned and how documents are processed through configurat
 }
 ```
 
----
+| Section | Purpose |
+| --- | --- |
+| `document` | Document-specific settings, such as a PDF password |
+| `capabilities` | Controls the output fields and parsing capabilities returned by the API |
+| `scope` | Limits parsing to selected pages |
+| `config` | Advanced configuration |
 
-## Common use cases
-
-Quick configurations for typical scenarios:
+## Common configurations
 
 <Tabs>
-  <Tab title="RAG Pipeline">
+  <Tab title="RAG and search">
+    Use this configuration when you need structure-aware chunks, headings, and table content.
+
     ```json
     {
       "capabilities": {
         "include_hierarchy": true,
-        "title_tree": true,
-        "include_table_structure": true
+        "title_tree": true
       }
     }
     ```
-    
-    **What it does:**
-    - Preserves document structure for better chunking
-    - Extracts table of contents for navigation
-    - Returns tables in structured format
+
+    This returns:
+
+    - Heading and section relationships
+    - A document title tree
+    - Structured table data
   </Tab>
 
-  <Tab title="Financial Reports">
+  <Tab title="Complex tables">
+    Use this configuration when tables need to be processed programmatically.
+
     ```json
     {
       "capabilities": {
         "include_table_structure": true,
-        "include_inline_objects": true,
         "table_view": "html"
       }
     }
     ```
-    
-    **What it does:**
-    - Extracts complex tables with merged cells
-    - Detects formulas in tables
-    - Returns tables in HTML format for better rendering
+
+    This returns row, column, cell, span, and coordinate information for table elements when available.
   </Tab>
 
-  <Tab title="Scanned Documents">
+  <Tab title="Scanned or photographed pages">
+    Use preprocessing options only when the document needs them.
+
     ```json
     {
       "capabilities": {
-        "crop_dewarp": true,
-        "remove_watermark": true,
-        "include_char_details": true
+        "crop_dewarp": true
       }
     }
     ```
-    
-    **What it does:**
-    - Automatically crops and straightens scanned pages
-    - Removes watermarks to improve OCR accuracy
-    - Returns character-level confidence scores
+
+    Enable:
+
+    - `crop_dewarp` when pages are rotated, curved, cropped unevenly, or photographed at an angle.
+    - `remove_watermark` only when visible watermarks interfere with recognition.
+    - `include_char_details` only when character-level information or confidence scores are required.
   </Tab>
 </Tabs>
 
----
-
 ## Capabilities
 
-Control the level of detail and format of returned data.
-
-### include_hierarchy
+### `include_hierarchy`
 
 Return parent-child relationships between elements.
 
 | Field | Type | Default |
-|-------|------|---------|
+| --- | --- | --- |
 | `include_hierarchy` | boolean | `true` |
 
-**When enabled:**
-- Elements include `parent_id` and `children_ids` fields
-- Build document structure trees
-- Track relationships between headings and content
+When enabled, elements may include relationship metadata such as parent and child element identifiers.
 
-**Example:**
-```json
-{
-  "element_id": "el_001",
-  "type": "Title",
-  "text": "Chapter 1",
-  "metadata": {
-    "children_ids": ["el_002", "el_003"]
-  }
-}
-```
+Use for:
 
-**Use for:**
 - RAG chunking with context preservation
 - Document navigation
 - Hierarchical content analysis
 
----
+### `include_table_structure`
 
-### include_table_structure
-
-Return detailed table structure with rows, columns, and cells.
+Return detailed table structure with rows, columns, cells, spans, and cell coordinates.
 
 | Field | Type | Default |
-|-------|------|---------|
+| --- | --- | --- |
 | `include_table_structure` | boolean | `false` |
 
-**When enabled:**
-- Tables include `table_structure` field with JSON format
-- Each cell has position, span, and coordinates
-- Supports merged cells and complex layouts
+Use for:
 
-**Example:**
-```json
-{
-  "type": "Table",
-  "table_structure": {
-    "rows": 3,
-    "cols": 2,
-    "cells": [
-      {
-        "row": 1,
-        "col": 1,
-        "row_span": 1,
-        "col_span": 1,
-        "text": "Product",
-        "content_type": "text"
-      }
-    ]
-  }
-}
-```
-
-**Use for:**
 - Programmatic table processing
 - Financial report analysis
 - Database imports
 - Extracting specific cells
 
----
+### `include_inline_objects`
 
-### include_inline_objects
-
-Extract formulas, handwriting, checkboxes, and images within text.
+Return formulas, handwriting, checkboxes, and inline images within text when detected.
 
 | Field | Type | Default |
-|-------|------|---------|
+| --- | --- | --- |
 | `include_inline_objects` | boolean | `false` |
 
-**When enabled:**
-- Elements include `objects` array with inline content
-- Detects: formulas (LaTeX), handwriting, checkboxes, images
+Use for:
 
-**Example:**
-```json
-{
-  "type": "NarrativeText",
-  "text": "The formula $f(x)=x^2+1$ shows...",
-  "objects": [
-    {
-      "type": "formula",
-      "text": "$f(x)=x^2+1$",
-      "text_range": [12, 25],
-      "coordinates": [0.220000, 0.480000, 0.300000, 0.480000, 0.300000, 0.540000, 0.220000, 0.540000]
-    }
-  ]
-}
-```
-
-**Use for:**
 - Scientific papers
 - Mathematical documents
 - Forms with checkboxes
-- Mixed content documents
+- Mixed-content documents
 
----
+### `include_image_data`
 
-### include_image_data
-
-Return image URLs and data for Image elements.
+Return image URLs or image data for Image elements.
 
 | Field | Type | Default |
-|-------|------|---------|
+| --- | --- | --- |
 | `include_image_data` | boolean | `false` |
 
-**When enabled:**
-- Image elements include `image_data` field
-- Provides image URL and optional Base64 encoding
+Use for:
 
-**Example:**
-```json
-{
-  "type": "Image",
-  "image_data": {
-    "image_url": "https://example.com/image.png",
-    "mime_type": "image/png"
-  }
-}
-```
-
-**Use for:**
 - Downloading images from documents
 - Image processing pipelines
 - Visual content extraction
 
----
+### `include_char_details`
 
-### include_char_details
-
-Return character-level coordinates and confidence scores.
+Return character-level coordinates and confidence scores when available.
 
 | Field | Type | Default |
-|-------|------|---------|
+| --- | --- | --- |
 | `include_char_details` | boolean | `false` |
 
-**When enabled:**
-- Elements include `char_details` array
-- Each character has coordinates and recognition confidence
+<Warning>
+  Use this only when you need character-level information. It can significantly increase response size.
+</Warning>
 
-**Use for:**
-- OCR quality assessment
-- Character-level positioning
-- Low-quality document handling
-- Custom text correction
+### `pages`
 
----
-
-### pages
-
-Return page metadata including dimensions and element lists.
+Return page-level metadata.
 
 | Field | Type | Default |
-|-------|------|---------|
+| --- | --- | --- |
 | `pages` | boolean | `false` |
 
-**When enabled:**
-- Response includes `pages` array
-- Each page has dimensions, DPI, rotation, element IDs
+Page metadata can include page dimensions, rotation, and element references.
 
-**Example:**
-```json
-{
-  "pages": [
-    {
-      "page_number": 1,
-      "page_width": 1576,
-      "page_height": 1683,
-      "element_ids": ["el_001", "el_002"],
-      "page_image_url": "https://example.com/page-1.jpg"
-    }
-  ]
-}
-```
+### `title_tree`
 
-**Use for:**
-- Page-level citations
-- Document preview generation
-- Page-by-page processing
-
----
-
-### title_tree
-
-Return hierarchical table of contents.
+Return a document outline based on detected headings.
 
 | Field | Type | Default |
-|-------|------|---------|
+| --- | --- | --- |
 | `title_tree` | boolean | `false` |
 
-**When enabled:**
-- Response includes `title_tree` with nested headings
-- Shows document outline structure
+Use for:
 
-**Example:**
-```json
-{
-  "title_tree": [
-    {
-      "element_id": "el_001",
-      "title": "Chapter 1",
-      "level": 1,
-      "page_number": 1,
-      "children": [
-        {
-          "title": "Section 1.1",
-          "level": 2,
-          "page_number": 2
-        }
-      ]
-    }
-  ]
-}
-```
+- Table of contents generation
+- Section-aware navigation
+- Structure-aware chunking
 
-**Use for:**
-- Document navigation
-- TOC generation
-- Section-based chunking
+### `table_view`
 
----
+Choose the text representation for table elements.
 
-### table_view
+| Field | Type | Values |
+| --- | --- | --- |
+| `table_view` | string | `markdown`, `html` |
 
-Control table format in Markdown output.
+Use `html` when complex tables cannot be represented clearly in Markdown.
 
-| Field | Type | **Default** | Options |
-|-------|------|---------|---------|
-| `table_view` | string | **`"html"`** | `markdown`, `html` |
+### `remove_watermark`
 
-**Markdown format:**
-```markdown
-| Name | Age |
-|------|-----|
-| John | 28  |
-```
-
-**HTML format:**
-```html
-<table>
-  <tr><th>Name</th><th>Age</th></tr>
-  <tr><td>John</td><td>28</td></tr>
-</table>
-```
-
-**Use HTML for:**
-- Complex tables with merged cells
-- Rich formatting preservation
-
-**Use Markdown for:**
-- Simple tables
-- LLM-friendly format
-
----
-
-### remove_watermark
-
-Automatically detect and remove watermarks.
+Attempt to remove visible watermarks before recognition.
 
 | Field | Type | Default |
-|-------|------|---------|
+| --- | --- | --- |
 | `remove_watermark` | boolean | `false` |
 
-**When enabled:**
-- Watermarks are removed during preprocessing
-- Improves OCR accuracy on watermarked documents
+Enable this only when watermarks interfere with text recognition.
 
-**Use for:**
-- Corporate documents with watermarks
-- Scanned contracts
-- Protected PDFs
+### `crop_dewarp`
 
----
-
-### crop_dewarp
-
-Automatically crop and straighten document images.
+Correct skewed, curved, or photographed pages before recognition.
 
 | Field | Type | Default |
-|-------|------|---------|
+| --- | --- | --- |
 | `crop_dewarp` | boolean | `false` |
 
-**When enabled:**
-- Removes borders and extra whitespace
-- Corrects perspective distortion
-- Straightens tilted pages
-
-**Use for:**
-- Scanned documents with borders
-- Photos of documents
-- Curved or warped pages
-
----
+Enable this when pages are rotated, curved, cropped unevenly, or photographed at an angle.
 
 ## Scope
 
-Control which pages to process.
+### `page_range`
 
-### page_range
+Parse only selected pages.
 
-Parse only specific pages to reduce processing time and cost.
-
-| Field | Type | Example |
-|-------|------|---------|
-| `page_range` | string | `"1-5,10-15"` |
-
-**Format:**
-- Single page: `"1"`
-- Range: `"1-5"`
-- Multiple ranges: `"1-2,5-10"`
-
-**Example:**
 ```json
 {
   "scope": {
-    "page_range": "1-10"
+    "page_range": "1-5,10,15-20"
   }
 }
 ```
 
-<Info>
-  **Page limits:**
-  - Sync API: 500 pages max
-  - Async API: 2000 pages max (paid), 5000 pages (enterprise)
-  
-  For larger documents, use `page_range` for batch processing or upgrade your plan.
-</Info>
+Use `page_range` to:
 
----
+- Test parsing on a subset of pages
+- Reduce processing time
+- Split a document that exceeds page limits
+- Process only the pages your application needs
 
 ## Document settings
 
-### password
+### `password`
 
-Provide password for encrypted PDFs.
+Pass the password for a password-protected PDF.
 
-| Field | Type |
-|-------|------|
-| `password` | string |
-
-**Example:**
 ```json
 {
   "document": {
-    "password": "your-pdf-password"
+    "password": "pdf-password"
   }
 }
 ```
 
----
+## Advanced configuration
 
-## config (Advanced configuration)
+### `force_engine`
 
-<Warning>
-  **Expert mode only.** These settings are for advanced users. Improper configuration may degrade parsing quality or cause failures.
-</Warning>
+Force a specific parsing engine when supported.
 
-### force_engine
-
-Force a specific parsing engine.
-
-| Field | Type | Options | Description |
-|-------|------|---------|-------------|
-| `force_engine` | string | `textin`, `textin_gui` | Force specific parsing engine |
-
-**Engines:**
-- `textin`: TextIn self-developed engine (default), best overall performance
-- `textin_gui`: GUI recognition engine for desktop/mobile/web application screenshots
-
-<Note>
-  `textin_gui` only supports image formats (JPEG, PNG, GIF, WebP), max 10MB file size, and returns a different structure.
-</Note>
-
-**Example:**
 ```json
 {
   "config": {
@@ -486,93 +271,52 @@ Force a specific parsing engine.
 }
 ```
 
-**Use for:**
-- Comparing different engine results
-- Specific scenarios requiring a particular engine
-- Debugging and testing
+<Warning>
+  Only use advanced engine settings when instructed by TextIn support or when your application requires a specific engine behavior.
+</Warning>
 
----
+### `engine_params`
 
-### engine_params
+Pass engine-specific parameters.
 
-Engine-level custom parameters. Different engines support different parameters.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `engine_params` | object | Custom parameters passed to the parsing engine |
-
-**Supported parameters:**
-
-| Parameter | Type | Options | Description |
-|-----------|------|---------|-------------|
-| `parse_mode` | string | `auto`, `scan`, `parse`, `lite`, `vlm` | PDF parsing mode:<br />• `auto`: Engine auto-selects (recommended)<br />• `scan`: Process as images<br />• `parse`: Text extraction only (fastest, digital PDFs)<br />• `lite`: Tables and text only<br />• `vlm`: Vision-language model (best quality, slower) |
-| `formula_level` | int | `0`, `1` | Formula recognition level: 0 = standard, 1 = enhanced |
-| `image_output_type` | string | `url`, `base64` | Image output format |
-| `recognize_chemical` | boolean | `true`, `false` | Extract chemical formulas (VLM mode only) |
-
-**Example:**
 ```json
 {
   "config": {
-    "force_engine": "textin",
-    "engine_params": {
-      "parse_mode": "parse",
-      "formula_level": 0,
-      "image_output_type": "url",
-      "recognize_chemical": true
-    }
+    "engine_params": {}
   }
 }
 ```
 
 <Note>
-  Different engines support different parameters. Contact technical support for engine-specific parameters.
+  Engine parameters may change across engines and versions. Use them only when you have a documented requirement.
 </Note>
-
----
 
 ## Performance tips
 
-<AccordionGroup>
-  <Accordion title="Enable only needed capabilities" icon="toggle-on">
-    Each capability increases processing time and response size. Only enable what you need.
-    
-    For example, if you don't need character-level details, keep `include_char_details: false`.
-  </Accordion>
+- Use the default configuration for the first integration.
+- Enable table structure only when you need cell-level table data.
+- Enable character details only when you need character-level coordinates or confidence scores.
+- Use `page_range` to test large documents before parsing the full file.
+- Use the asynchronous API for large documents, batch processing, or workflows that do not need the result in the original request.
 
-  <Accordion title="Use page_range for large documents" icon="file">
-    Process a subset of pages first to test configuration, then process the full document.
-    
-    ```json
-    {"scope": {"page_range": "1-5"}}
-    ```
-  </Accordion>
-
-  <Accordion title="Use async for files over 50 pages" icon="clock">
-    Sync API may timeout on large files. Use the async API for better reliability.
-    
-    See [Async Processing](/xparse/v1/async-processing) for details.
-  </Accordion>
-
-  <Accordion title="Cache results by file_id" icon="database">
-    Identical documents produce the same `file_id`. Use it to implement result caching.
-  </Accordion>
-</AccordionGroup>
-
----
+Synchronous requests and asynchronous jobs both have a maximum processing time of 10 minutes. See [Supported Files & Limits](/xparse/supported-files) for current limits.
 
 ## Related resources
 
-<CardGroup cols={3}>
-  <Card title="Quickstart" icon="rocket" href="/xparse/v1/quickstart">
-    Parse your first document
+<CardGroup cols={2}>
+  <Card title="Parse Quickstart" icon="rocket" href="/xparse/parse/quickstart">
+    Parse your first document.
   </Card>
 
-  <Card title="Response Format" icon="code" href="/xparse/v1/response-format">
-    Understand the response structure
+  <Card title="Response Format" icon="code" href="/xparse/parse/response-format">
+    Understand the response structure.
   </Card>
 
-  <Card title="Examples" icon="book-open" href="/xparse/v1/examples">
-    See configuration in action
+  <Card title="Async Processing" icon="clock" href="/xparse/parse/async-processing">
+    Process large documents asynchronously.
+  </Card>
+
+  <Card title="Supported Files & Limits" icon="file" href="/xparse/supported-files">
+    Review supported formats and limits.
   </Card>
 </CardGroup>

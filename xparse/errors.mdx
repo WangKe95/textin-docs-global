@@ -1,0 +1,68 @@
+---
+title: "Errors"
+description: "Common xParse error codes for Parse and Extract."
+---
+
+Use this page as the primary error code reference for both **Parse** and **Extract**.
+
+## Authentication errors
+
+These errors are shared across Parse and Extract.
+
+| Code | Description | Solution |
+| --- | --- | --- |
+| `40101` | Missing credentials | Include both authentication headers. |
+| `40102` | Invalid credentials | Verify your App ID and Secret Code. |
+| `40103` | Client IP address is not on the IP allowlist | Add the client IP address to the IP allowlist. |
+
+See also: [Authentication](/xparse/authentication)
+
+## Request and file errors
+
+These errors are shared across Parse and Extract.
+
+| Code | Description | Solution |
+| --- | --- | --- |
+| `40302` | File size exceeds the limit for the current endpoint | Reduce file size, split the file, or use the limits documented for the current endpoint. |
+| `40303` | Unsupported file type | Use a supported file type. |
+| `40304` | Invalid image dimensions | Resize the image to a supported size. |
+| `40422` | Corrupted file | Re-upload the file or regenerate it from the source document. |
+| `40423` | Incorrect PDF password | Provide the correct password. |
+| `40424` | Page range out of bounds | Adjust the selected page range. |
+| `40425` | Unsupported input file format | Convert the file to a supported format. |
+| `40428` | Office-to-PDF conversion failed or timed out | Re-export the file, remove unsupported content, or convert it to PDF first. |
+
+See also: [Supported Files & Limits](/xparse/supported-files)
+
+## Request validation errors
+
+These errors are shared across Parse and Extract.
+
+| Code | Description | Solution |
+| --- | --- | --- |
+| `40003` | Insufficient balance | Top up the account or switch to an account with available balance. |
+| `40004` | Invalid request parameters | Check request parameters, schema fields, and file input. |
+| `40007` | Bot does not exist or is not published | Verify the configured bot identifier and publish status. |
+| `40008` | Bot is not enabled | Enable the bot before sending requests. |
+| `40301` | Unsupported image type | Use a supported image format. |
+| `40305` | No file uploaded | Include a file in the request. |
+| `40400` | Invalid request URL | Verify the request endpoint and path. |
+| `50207` | Partial page failure | Inspect the response and retry the affected file if necessary. |
+
+## Parse-specific errors
+
+| Code | Description | Solution |
+| --- | --- | --- |
+| `40427` | Unsupported DPI value | Use a supported DPI setting, or remove the DPI parameter if it is not required. |
+
+See also: [Parse Response Format](/xparse/parse/response-format)
+
+## Extract-specific errors
+
+| Code | Description | Solution |
+| --- | --- | --- |
+| `40306` | QPS limit exceeded | Reduce request rate or request a higher limit. |
+| `50011` | LLM connection failed | Retry the request. Contact support if the problem persists. |
+| `50012` | LLM engine failed | Retry the request. Contact support if the problem persists. |
+
+See also: [Extract Response Format](/xparse/extract/response-format)

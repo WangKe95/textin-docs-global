@@ -71,11 +71,11 @@ To use the schema file, refer to this code example:
 ```python
 import requests
 import json
-url = "https://api.textin.com/ai/service/v3/entity_extraction"
+url = "https://api.textin.ai/ai/service/v3/entity_extraction"
 schema_file = '/Downloads/receipt.json'  # Your actual schema file path
 payload = {
     "file": {
-        "file_url": "https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
+        "file_url": "https://web-api.textin.ai/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
     },
 	"schema":json.loads(open(schema_file).read()),  # Load schema file
     "parse_options":{

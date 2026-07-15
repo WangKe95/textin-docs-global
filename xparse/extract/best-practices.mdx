@@ -1,67 +1,226 @@
 ---
 title: "Best Practices"
-description: "Recommendations for creating high-quality JSON schemas"
+description: "Use clear field names, precise descriptions, and simple schema structures to improve extraction quality."
 ---
 
-## Overview
+Good schemas describe the data that appears in the source document. They should not ask the model to calculate new values, infer unsupported data, or transform results that can be handled downstream.
 
-Well-constructed schemas ensure extraction results better meet expectations and facilitate downstream usage. Best practices shared in this guide include:
+## Use field names that match the document
 
-- Defining clear fields
-- Using enumerations and descriptions
-- Avoiding unnecessary nesting
-- Focusing on key information in source documents to guide the extraction engine in accurately understanding extraction intent and interpreting documents
+Field names should be specific and close to the wording in the source document.
 
-By applying these practices, you can reduce extraction errors, improve output information completeness, and facilitate easier downstream integration.
+| Avoid | Prefer |
+| --- | --- |
+| `amount` | `invoice_total` |
+| `date` | `invoice_date` |
+| `name` | `vendor_name` |
+| `id` | `purchase_order_number` |
 
-## JSON Schema Recommendations
+Specific field names reduce ambiguity and make the output easier to use downstream.
 
-Your extraction schema plays a crucial role in output quality. Experiment with schema structure, descriptions, and type constraints to achieve optimal extraction results.
+## Write precise field descriptions
 
-**1. Use field names that closely match source document content and provide clear descriptions for each field.**
+Descriptions help the extraction model choose the correct value when a document contains similar fields.
 
-Using field names and descriptions consistent with how information appears in source documents helps the extraction engine more easily identify and extract correct values. For example, when extracting data from tables, you can directly use table headers as field names.
+| Weak description | Better description |
+| --- | --- |
+| `Amount` | `The total amount including tax` |
+| `Date` | `The invoice issue date` |
+| `Company` | `The vendor or merchant name` |
+| `Address` | `The billing address of the buyer` |
 
-**2. Use enumeration type constraints for data that is a limited set of values.**
+Include units, date meaning, currency expectations, and business context when they matter.
 
-If a field has a predictable set of values (e.g., "Yes/No" or predefined categories), use enum type to constrain output and improve consistency.
+## Use enums for known values
+
+Use enum fields when the output should be one of a known set of values.
+
+In the schema JSON used by Extract, enum fields can constrain the output to a predefined set of allowed values.
 
 ```json
-"properties": {
-      "currency": {
-         "type": ["enum", "null"],
-          "enum": [
-            "USD",
-            "EUR",
-            "JPY",
-            "CAD",
-            "AUD",
-            "Other"
-          ],
-          "description": "International currency code"
-      }
+{
+  "payment_status": {
+    "type": ["enum", "null"],
+    "enum": ["Paid", "Pending", "Overdue", "Cancelled"],
+    "description": "The payment status shown in the document"
   }
+}
 ```
 
-**3. Avoid creating new data in the schema; leave data processing to downstream systems.**
+Enums improve consistency and reduce variation in downstream systems.
+
+## Keep schemas simple
+
+Use the simplest structure that matches the data you need.
+
+Avoid deep nesting unless the source document actually contains nested information. Deep schemas are harder to maintain and can make extraction less reliable.
+
+The examples below show field definitions inside the `properties` object, not complete top-level schemas.
+
+Recommended:
+
+```json
+{
+  "vendor_name": {
+    "type": ["string", "null"],
+    "description": "The vendor name"
+  },
+  "vendor_tax_id": {
+    "type": ["string", "null"],
+    "description": "The vendor tax ID"
+  }
+}
+```
+
+Use a nested object only when grouping fields improves clarity:
+
+```json
+{
+  "vendor": {
+    "type": "object",
+    "description": "Vendor information",
+    "properties": {
+      "name": {
+        "type": ["string", "null"],
+        "description": "The vendor name"
+      },
+      "tax_id": {
+        "type": ["string", "null"],
+        "description": "The vendor tax ID"
+      }
+    },
+    "required": ["name", "tax_id"]
+  }
+}
+```
+
+## Use arrays for repeated data
+
+Use arrays when the document contains repeated values or table rows.
+
+The example below shows a field definition inside the `properties` object, not a complete top-level schema.
+
+```json
+{
+  "line_items": {
+    "type": "array",
+    "description": "Invoice line items",
+    "items": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": ["string", "null"],
+          "description": "Line item description"
+        },
+        "quantity": {
+          "type": ["number", "null"],
+          "description": "Line item quantity"
+        },
+        "amount": {
+          "type": ["number", "null"],
+          "description": "Line item amount"
+        }
+      },
+      "required": ["description", "quantity", "amount"]
+    }
+  }
+}
+```
+
+Use arrays for:
+
+- Invoice line items
+- Order lists
+- Product lists
+- Tables with repeated rows
+- Multiple addresses, contacts, or identifiers
+
+## Do not ask the schema to calculate new values
+
+The schema should describe values that appear in the source document. Do calculations in your application after extraction.
+
+Avoid:
+
+```json
+{
+  "annual_cost": {
+    "type": ["number", "null"],
+    "description": "Monthly cost multiplied by 12"
+  }
+}
+```
+
+Prefer:
+
+```json
+{
+  "monthly_cost": {
+    "type": ["number", "null"],
+    "description": "The monthly service cost"
+  }
+}
+```
+
+Then calculate downstream:
 
 ```python
-# Extract monthly consumption value from source document via schema
-"properties": {
-      "monthly_cost": { 
-          "type": ["number", "null"],
-          "description": "Total monthly service cost" 
-      },
-}
-.
-.
-.
-# Calculate annual consumption downstream
-total_annual_price = 
-  extract_result.json()["result"][0]["monthly_cost"] * 12
-
+annual_cost = result["monthly_cost"] * 12
 ```
 
-**4. Use array types for long lists.**
+## Use nullable fields
 
-If you need to extract a long list of items (e.g., order list in an invoice table), use array type in your schema. This helps the engine fully capture each item in the list and avoid missing trailing data.
+Use nullable field types when a value may not appear in every document.
+
+```json
+{
+  "purchase_order_number": {
+    "type": ["string", "null"],
+    "description": "The purchase order number"
+  }
+}
+```
+
+This makes the schema more permissive when a field may be absent.
+
+<Note>
+  In current Extract responses, missing values may still appear as empty strings or empty arrays rather than `null`, depending on the field and the returned output.
+</Note>
+
+## Test with representative documents
+
+Test schemas with documents that reflect real production inputs:
+
+- Different vendors or document templates
+- Scanned and digital documents
+- Short and long documents
+- Documents with missing fields
+- Documents with tables or repeated rows
+
+Review both extracted values and citations when available.
+
+## Iterate on the schema
+
+If extraction quality is poor:
+
+1. Make field names more specific.
+2. Add clearer descriptions.
+3. Use enums for fixed categories.
+4. Split ambiguous fields into separate fields.
+5. Simplify nested structures.
+6. Test with more representative examples.
+
+## Related resources
+
+<CardGroup cols={3}>
+  <Card title="Extract Quickstart" icon="rocket" href="/xparse/extract/quickstart">
+    Extract your first document.
+  </Card>
+
+  <Card title="Schema Guide" icon="book" href="/xparse/extract/schema-guide">
+    Create extraction schemas.
+  </Card>
+
+  <Card title="Response Format" icon="code" href="/xparse/extract/response-format">
+    Understand the output.
+  </Card>
+</CardGroup>

@@ -1,137 +1,146 @@
 ---
 title: "Schema Guide"
-description: "Create extraction schemas using the visual builder"
+description: "Create schemas for Extract."
 ---
 
-Create extraction schemas visually—no need to write JSON manually.
+A schema defines the fields the extraction API should return. Use clear field names, precise descriptions, and simple structures to improve extraction quality.
 
-## Why schema matters
+## What a schema defines
 
-Schemas tell the extraction API exactly what fields to pull from your documents. The more specific your field names and descriptions, the more accurate the extraction.
+At minimum, a schema defines:
 
----
+- The output field names
+- The expected value type for each field
+- A description of what each field means
+- Whether nested objects or arrays should be returned
 
-## Create schema in visual builder
+Example:
 
-Use the [web interface](https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown&tab=llmExtract) to build schemas without writing JSON:
-
-<Steps>
-  <Step title="Upload file">
-    Upload a sample document or use a provided example
-  </Step>
-  <Step title="Add fields">
-    Define field names, types, and descriptions
-  </Step>
-  <Step title="Validate results">
-    Extract and verify the output matches your expectations
-  </Step>
-  <Step title="Export schema">
-    Download as JSON for API use
-  </Step>
-</Steps>
-
----
-
-## Step-by-step walkthrough
-
-<Steps>
-  <Step title="Upload File" stepNumber={1}>
-    Upload a file using the web interface or click a sample file. The system will automatically parse the file content to prepare for extraction.
-  </Step>
-  <Step title="Create Schema">
-    Use the web interface to create a schema from scratch.
-  </Step>
-  <Step title="Validate Extraction Results">
-    Extract using your configured schema and validate the results meet your expectations.
-  </Step>
-  <Step title="Export Schema" stepNumber={4}>
-    Once your schema is debugged, export it as a JSON file for use in API calls.
-  </Step>
-</Steps>
-
-### 1. Open console
-
-Navigate to the [TextIn Console](https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown) and switch to the **Intelligent Extraction** tab.
-
-![Extract V3 Schema Empty Jp](/images/extract-v3-schema-empty.jpg)
-
----
-
-### 2. Add fields
-
-In **Extraction Configuration**, add fields you want to extract:
-
-1. Enter field name (e.g., "invoice_number")
-2. Select field type from dropdown (string, number, array, object, etc.)
-3. Add field description (helps model understand what to extract)
-4. Click **Add Field**
-
-<img
-  src="/images/extract-v3-schema-edit.png"
-  alt="Extract V3 Schema Edit"
-  className="mx-auto"
-  style={{ width:"100%" }}
-/>
-
-**Tips:**
-- Hover over fields to delete or drag-to-reorder
-- Use specific field names ("invoice_total" not "amount")
-- Add clear descriptions ("Total amount including tax")
-
----
-
-### 3. Validate results
-
-Click **Extract** to test your schema. The result panel shows extracted data.
-
-![Extract V3 Schema Result Panel Jp](/images/extract-v3-schema-result-panel.jpg)
-
-**Review:**
-- Click extracted fields to highlight their location in the document
-- Switch between **Preview** and **JSON** views
-- Adjust schema and re-extract until results match expectations
-
-<img
-  src="/images/extract-v3-json-preview.jpg"
-  alt="Extract V3 JSON Preview"
-  className="mx-auto"
-  style={{ width:"100%" }}
-/>
-
----
-
-### 4. Export schema
-
-Click **Export Configuration** to download your schema as JSON.
-
-Use it in API calls:
-
-```python
-import json
-from xparse_client import XParseClient
-
-client = XParseClient()
-
-# Load exported schema
-schema = json.loads(open("invoice_schema.json").read())
-
-# Extract with schema
-with open("invoice.pdf", "rb") as f:
-    result = client.extract.run(file=f, schema=schema)
+```json
+{
+  "type": "object",
+  "properties": {
+    "invoice_number": {
+      "type": ["string", "null"],
+      "description": "The invoice number"
+    },
+    "total_amount": {
+      "type": ["number", "null"],
+      "description": "The total amount including tax"
+    }
+  },
+  "required": ["invoice_number", "total_amount"]
+}
 ```
 
----
+## Ways to create a schema
 
-## Schema structure
+You can create a schema in two ways:
 
-Behind the scenes, your visual configuration becomes JSON Schema:
+- Ask the Document Agent to generate a draft schema from the current document.
+- Create or edit the schema JSON locally.
+
+### Generate a draft schema with the Document Agent
+
+The fastest way to get started is to ask the Document Agent to generate a draft schema JSON used by Extract for the current document.
+
+Typical workflow:
+
+<Steps>
+  <Step title="Open a document">
+    Open a document in the web app.
+  </Step>
+  <Step title="Ask the Document Agent">
+    Ask the Document Agent to generate the schema JSON for the fields you need.
+  </Step>
+  <Step title="Review the schema">
+    Review the proposed schema in the editor.
+  </Step>
+  <Step title="Edit as needed">
+    Edit field names, field types, descriptions, and output order as needed.
+  </Step>
+  <Step title="Run extraction">
+    Run extraction and review the result.
+  </Step>
+</Steps>
+
+The generated schema is editable. You can refine field descriptions, remove unnecessary fields, change field types, and reorder fields before using the schema in production.
+
+### Create or edit a schema manually
+
+If you prefer to define the schema yourself, create or edit the schema JSON locally.
+
+<Steps>
+  <Step title="Write the schema">
+    Write or paste the schema JSON used by Extract.
+  </Step>
+  <Step title="Save the schema">
+    Save the schema as a local JSON file.
+  </Step>
+  <Step title="Include it in the request">
+    Include the schema in your API request.
+  </Step>
+  <Step title="Run extraction">
+    Run extraction and review the result.
+  </Step>
+  <Step title="Revise">
+    Revise field names, types, descriptions, or nesting as needed.
+  </Step>
+</Steps>
+
+This path is useful when:
+
+- You already have a schema design from your application.
+- You want precise control over field names and output structure.
+- You want to refine a generated schema before using it in production.
+- You want to manage schemas in code, version control, or internal tooling.
+
+## Use the schema in an API request
+
+If you created the schema locally, include the JSON file directly in your API request.
+
+If you created the schema in the web app, export it as JSON before reusing it through the API.
+
+```python
+import base64
+import json
+import os
+import requests
+
+with open("invoice_schema.json", "r", encoding="utf-8") as schema_file:
+    schema = json.load(schema_file)
+
+with open("invoice.pdf", "rb") as file:
+    file_base64 = base64.b64encode(file.read()).decode("utf-8")
+
+response = requests.post(
+    "https://api.textin.ai/ai/service/v3/entity_extraction",
+    headers={
+        "x-ti-app-id": os.environ["TEXTIN_APP_ID"],
+        "x-ti-secret-code": os.environ["TEXTIN_SECRET_CODE"],
+        "Content-Type": "application/json",
+    },
+    json={
+        "file": {"file_base64": file_base64},
+        "schema": schema,
+    },
+)
+
+print(response.json()["result"]["extracted_schema"])
+```
+
+## Schema JSON structure
+
+### Object structure
+
+Most extraction schemas use an object at the top level.
 
 ```json
 {
   "type": "object",
   "properties": {
     "field_name": {
-      "type": "string",
+      "type": ["string", "null"],
       "description": "Field description"
     }
   },
@@ -139,134 +148,203 @@ Behind the scenes, your visual configuration becomes JSON Schema:
 }
 ```
 
-**Key fields:**
-- `type`: Field data type
-- `description`: Helps model understand what to extract
-- `required`: Fields that must be extracted
-- `enum`: Predefined choices for enum types
-- `items`: Structure for array elements
+| Field | Description |
+| --- | --- |
+| `type` | The schema or field type |
+| `properties` | Fields to extract |
+| `required` | Fields that are required in the schema structure |
 
----
+### Common field properties
+
+Individual fields can include additional properties depending on the field type.
+
+| Field | Used for | Description |
+| --- | --- | --- |
+| `description` | Most field types | Natural-language description of the field |
+| `enum` | `type: "enum"` | Predefined values for enum fields |
+| `items` | `type: "array"` | Schema for array items |
 
 ## Field types
 
+The examples in this section show field definitions inside `properties`, not complete top-level schemas.
+
 | Type | Description | Example |
-|------|-------------|---------|
+| --- | --- | --- |
 | `string` | Text | `"John Doe"` |
-| `number` | Numeric | `123.45` |
-| `integer` | Integer only | `42` |
-| `enum` | Predefined choices | One of: `["Paid", "Pending"]` |
-| `object` | Nested fields | `{"name": "...", "addr": "..."}` |
-| `array` | List of items | `[{...}, {...}]` |
+| `number` | Numeric value | `123.45` |
+| `integer` | Integer value | `42` |
+| `enum` | One value from a predefined list | `"Paid"` |
+| `object` | Nested fields | `{"name": "...", "address": "..."}` |
+| `array` | List of values or objects | `[{...}, {...}]` |
 
-**Nesting limits:**
-- Maximum 3 levels of nesting
-- Maximum 100 leaf fields (lowest-level fields)
+### Enum field example
 
----
+```json
+{
+  "type": "enum",
+  "enum": ["Paid", "Pending", "Overdue"],
+  "description": "Payment status"
+}
+```
 
-## Common patterns
+### Nullable fields
+
+Use nullable types when a field may be missing:
+
+```json
+{
+  "type": ["string", "null"],
+  "description": "The purchase order number"
+}
+```
+
+Use this pattern when a field may be absent or empty in the source document.
+
+In practice, fields that cannot be extracted may be returned as empty values, such as an empty string or an empty array, depending on the field type.
+
+## Schema limits
+
+| Limit | Value |
+| --- | ---: |
+| Maximum nesting depth | 3 levels |
+| Maximum leaf fields | 100 |
+
+A leaf field is a field that holds a final extracted value rather than nested fields.
+
+## Common schema patterns
+
+Each example in this section is a complete top-level schema that you can adapt for your own extraction task.
 
 ### Single value
 
-Field appears once in document:
+Use a single field when the value appears once in the document.
 
 ```json
 {
-  "invoice_number": {
-    "type": "string",
-    "description": "Invoice number"
-  }
+  "type": "object",
+  "properties": {
+    "invoice_number": {
+      "type": ["string", "null"],
+      "description": "The invoice number"
+    }
+  },
+  "required": ["invoice_number"]
 }
 ```
-
-![Extract V3 Mono Key Jp](/images/extract-v3-mono-key.jpg)
-
----
 
 ### Multiple values
 
-Field has multiple parallel values (not a table):
+Use an array when the document may contain multiple values for the same field.
 
 ```json
 {
-  "colors": {
-    "type": "array",
-    "description": "Available colors",
-    "items": {"type": "string"}
-  }
-}
-```
-
-![Extract V3 Multi Value Jp](/images/extract-v3-multi-value.jpg)
-
-![Extract V3 Multi Value Demo Jp](/images/extract-v3-multi-value-demo.jpg)
-
----
-
-### Table
-
-Multiple rows with repeating structure:
-
-```json
-{
-  "line_items": {
-    "type": "array",
-    "description": "Invoice line items",
-    "items": {
-      "type": "object",
-      "properties": {
-        "description": {"type": "string"},
-        "quantity": {"type": "number"},
-        "price": {"type": "number"}
+  "type": "object",
+  "properties": {
+    "available_colors": {
+      "type": "array",
+      "description": "All available product colors",
+      "items": {
+        "type": "string"
       }
     }
-  }
+  },
+  "required": ["available_colors"]
 }
 ```
 
-![Extract V3 Schema Table Sample Jp](/images/extract-v3-schema-table-sample.jpg)
+### Table rows
 
-**Multiple tables:** Add multiple array fields
+Use an array of objects when you need repeated rows with the same structure.
 
-![Extract V3 Schema Multi Table Jp](/images/extract-v3-schema-multi-table.jpg)
-
----
+```json
+{
+  "type": "object",
+  "properties": {
+    "line_items": {
+      "type": "array",
+      "description": "Invoice line items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": ["string", "null"],
+            "description": "Item description"
+          },
+          "quantity": {
+            "type": ["number", "null"],
+            "description": "Item quantity"
+          },
+          "amount": {
+            "type": ["number", "null"],
+            "description": "Line item amount"
+          }
+        },
+        "required": ["description", "quantity", "amount"]
+      }
+    }
+  },
+  "required": ["line_items"]
+}
+```
 
 ### Nested object
 
-Related fields grouped together:
+Use nested objects for grouped fields.
 
 ```json
 {
-  "vendor": {
-    "type": "object",
-    "description": "Vendor information",
-    "properties": {
-      "name": {"type": "string"},
-      "address": {"type": "string"},
-      "phone": {"type": "string"}
+  "type": "object",
+  "properties": {
+    "vendor": {
+      "type": "object",
+      "description": "Vendor information",
+      "properties": {
+        "name": {
+          "type": ["string", "null"],
+          "description": "Vendor name"
+        },
+        "address": {
+          "type": ["string", "null"],
+          "description": "Vendor address"
+        }
+      },
+      "required": ["name", "address"]
     }
-  }
+  },
+  "required": ["vendor"]
 }
 ```
 
-![Extract V3 Object Jp](/images/extract-v3-object.jpg)
+## Field description guidelines
 
----
+Good descriptions:
+
+- Use the wording that appears in the source document when possible.
+- Explain what the value means.
+- Include units, date formats, or currency expectations when relevant.
+- Avoid asking the model to calculate values that are not directly present.
+
+Examples:
+
+| Weak description | Better description |
+| --- | --- |
+| `Amount` | `The total amount including tax` |
+| `Date` | `The invoice issue date` |
+| `Name` | `The vendor or merchant name` |
+| `Status` | `Payment status. One of: Paid, Pending, Overdue` |
 
 ## Next steps
 
 <CardGroup cols={3}>
-  <Card title="Best Practices" icon="lightbulb" href="/xparse/extract/best-practices">
-    Tips for better accuracy
+  <Card title="Extract Quickstart" icon="rocket" href="/xparse/extract/quickstart">
+    Extract your first document.
   </Card>
-  
-  <Card title="Quickstart" icon="rocket" href="/xparse/extract/quickstart">
-    Extract your first document
-  </Card>
-  
+
   <Card title="Response Format" icon="code" href="/xparse/extract/response-format">
-    Understand the output
+    Understand the output.
+  </Card>
+
+  <Card title="Best Practices" icon="lightbulb" href="/xparse/extract/best-practices">
+    Improve extraction accuracy.
   </Card>
 </CardGroup>

@@ -81,7 +81,7 @@ Submit a file for async processing.
 
   <Tab title="cURL">
     ```bash
-    curl -X POST "https://api.textin.com/api/v1/xparse/parse/async" \
+    curl -X POST "https://api.textin.ai/api/v1/xparse/parse/async" \
       -H "x-ti-app-id: YOUR_APP_ID" \
       -H "x-ti-secret-code: YOUR_SECRET_CODE" \
       -F "file=@large_document.pdf"
@@ -93,7 +93,7 @@ Submit a file for async processing.
     import requests
 
     response = requests.post(
-        "https://api.textin.com/api/v1/xparse/parse/async",
+        "https://api.textin.ai/api/v1/xparse/parse/async",
         headers={
             "x-ti-app-id": "YOUR_APP_ID",
             "x-ti-secret-code": "YOUR_SECRET_CODE"
@@ -153,7 +153,7 @@ Poll the status endpoint until completion.
 
   <Tab title="cURL">
     ```bash
-    curl -X GET "https://api.textin.com/api/v1/xparse/parse/async/job_x9k2m" \
+    curl -X GET "https://api.textin.ai/api/v1/xparse/parse/async/job_x9k2m" \
       -H "x-ti-app-id: YOUR_APP_ID" \
       -H "x-ti-secret-code: YOUR_SECRET_CODE"
     ```
@@ -171,7 +171,7 @@ Poll the status endpoint until completion.
 
     while True:
         response = requests.get(
-            f"https://api.textin.com/api/v1/xparse/parse/async/{job_id}",
+            f"https://api.textin.ai/api/v1/xparse/parse/async/{job_id}",
             headers=headers
         )
         
@@ -210,7 +210,7 @@ Poll the status endpoint until completion.
   "data": {
     "job_id": "job_x9k2m",
     "status": "completed",
-    "result_url": "https://api.textin.com/api/v1/xparse/result/job_x9k2m",
+    "result_url": "https://api.textin.ai/api/v1/xparse/result/job_x9k2m",
     "created_at": "2024-01-15T10:30:00Z",
     "completed_at": "2024-01-15T10:35:00Z"
   }
@@ -240,7 +240,7 @@ Include `webhook` parameter when creating the job:
 
   <Tab title="cURL">
     ```bash
-    curl -X POST "https://api.textin.com/api/v1/xparse/parse/async" \
+    curl -X POST "https://api.textin.ai/api/v1/xparse/parse/async" \
       -H "x-ti-app-id: YOUR_APP_ID" \
       -H "x-ti-secret-code: YOUR_SECRET_CODE" \
       -F "file=@document.pdf" \
@@ -257,7 +257,7 @@ When processing completes, you'll receive a POST request:
 {
   "job_id": "job_x9k2m",
   "status": "completed",
-  "result_url": "https://api.textin.com/api/v1/xparse/result/job_x9k2m",
+  "result_url": "https://api.textin.ai/api/v1/xparse/result/job_x9k2m",
   "created_at": "2024-01-15T10:30:00Z",
   "completed_at": "2024-01-15T10:35:00Z"
 }
@@ -385,7 +385,7 @@ Fetch the full parsing result from `result_url`.
 
   <Tab title="cURL">
     ```bash
-    curl -X GET "https://api.textin.com/api/v1/xparse/result/job_x9k2m" \
+    curl -X GET "https://api.textin.ai/api/v1/xparse/result/job_x9k2m" \
       -H "x-ti-app-id: YOUR_APP_ID" \
       -H "x-ti-secret-code: YOUR_SECRET_CODE"
     ```
@@ -395,7 +395,7 @@ Fetch the full parsing result from `result_url`.
     ```python
     # Get result URL from status
     status_response = requests.get(
-        f"https://api.textin.com/api/v1/xparse/parse/async/{job_id}",
+        f"https://api.textin.ai/api/v1/xparse/parse/async/{job_id}",
         headers=headers
     )
     result_url = status_response.json()["data"]["result_url"]
