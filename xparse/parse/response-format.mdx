@@ -1,6 +1,6 @@
 ---
 title: "Response Format"
-description: "Understand the Parse response format."
+description: "Understand the **Parse** response format."
 ---
 
 Parse returns Markdown, structured document elements, and optional output fields based on the capabilities you enable in the request.
@@ -303,12 +303,6 @@ The following error is specific to Parse:
 | Code | Description | Solution |
 | --- | --- | --- |
 | `40427` | Unsupported DPI value | Use a supported DPI setting, or remove the DPI parameter if it is not required. |
-
-## Special notes for the GUI engine
-
-When you use the GUI recognition engine, some element types, metadata fields, and object structures may differ from standard document parsing output.
-
-If your integration depends on GUI-specific output, validate the response structure against the GUI engine results directly rather than assuming it matches the standard Parse output exactly.
 
 ## Related resources
 

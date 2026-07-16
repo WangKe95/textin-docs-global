@@ -16,11 +16,11 @@ x-ti-secret-code: YOUR_SECRET_CODE
 
 <Steps>
   <Step title="Sign in to the TextIn console">
-    Sign in to your [TextIn account](https://www.textin.ai/console/dashboard/setting).
+    Sign in to your [TextIn account](https://www.textin.ai/console/recognition/robot_markdown_beta?service=pdf_to_markdown).
   </Step>
 
-  <Step title="Open Account & Developer">
-    Click your profile icon, then select **Account & Developer**.
+  <Step title="Open API Keys">
+    Click your profile icon, then select **API Keys**.
 
     ![AP Ikey 1 Pn](/images/APIkey-1.png)
   </Step>
@@ -105,11 +105,11 @@ The following examples read credentials from these environment variables.
 
 ## Troubleshooting
 
-| Error Code | Description | Solution |
-|------------|-------------|----------|
-| 40101 | `x-ti-app-id` or `x-ti-secret-code` is missing | Include both headers in your request |
-| 40102 | `x-ti-app-id` or `x-ti-secret-code` is invalid | Verify your credentials in the [console](https://www.textin.ai/console/dashboard/setting) |
-| 40103 | Client IP not in IP allowlist | Add your IP to the IP allowlist in console settings |
+| Code | Description | Solution |
+| --- | --- | --- |
+| `40101` | One or both authentication headers are missing | Include both authentication headers in the request. |
+| `40102` | The App ID or Secret Code is invalid | Verify that you are using the correct App ID and Secret Code. |
+| `40103` | Client IP address is not on the IP allowlist | Add the client IP address to the IP allowlist in the console. |
 
 <Tip>
   If you continue to see authentication errors after verifying your credentials, contact [TextIn support](https://www.textin.ai/contact) for assistance.

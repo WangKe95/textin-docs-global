@@ -1,6 +1,6 @@
 ---
 title: "Configuration"
-description: "Customize parsing behavior and choose which output fields Parse returns."
+description: "Customize parsing behavior and choose which output fields the **Parse** returns."
 ---
 
 Use configuration options when the default output is not enough for your workflow. Enable options based on the document characteristics and the output your application requires.
@@ -282,10 +282,22 @@ Pass engine-specific parameters.
 ```json
 {
   "config": {
-    "engine_params": {}
+    "engine_params": {
+      "parse_mode": "auto",
+      "formula_level": 0,
+      "image_output_type": "url",
+      "recognize_chemical": false
+    }
   }
 }
 ```
+
+| Parameter | Type | Values | Description |
+| --- | --- | --- | --- |
+| `parse_mode` | string | `auto`, `scan`, `parse`, `vlm` | How the PDF is parsed. <ul><li>`auto`: The engine selects the mode automatically. Works for the widest range of documents.</li><li>`scan`: Treat every page as an image.</li><li>`parse`: Extract text from digital PDFs only. Fastest option.</li><li>`vlm`: Parse with a vision-language model.</li></ul> |
+| `formula_level` | int | `0`, `1` | Formula recognition level: `0` for standard, `1` for enhanced. |
+| `image_output_type` | string | `url`, `base64` | How images are returned, as a `url` or `base64` string. |
+| `recognize_chemical` | boolean | `true`, `false` | Extract chemical molecular structures from the document. Takes effect only in `vlm` mode. When enabled, the results appear in each element's `text` field. |
 
 <Note>
   Engine parameters may change across engines and versions. Use them only when you have a documented requirement.

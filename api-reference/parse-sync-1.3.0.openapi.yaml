@@ -400,7 +400,7 @@ components:
       properties:
         force_engine:
           type: string
-          enum: [textin, textin_gui]
+          enum: [textin]
           description: Force specify internal engine, for expert mode use only.
         engine_params:
           type: object
@@ -583,7 +583,7 @@ components:
         type:
           type: string
           description: |
-            Element type. **GUI engine uses different element types** (such as button, input, checkbox, etc.), see [GUI Element Types](#ui-element-types) for details.
+            Element type.
           enum:
             - Title
             - NarrativeText
@@ -771,7 +771,7 @@ components:
           $ref: '#/components/schemas/Coordinates'
         image_datas:
           type: array
-          description: Array of images within the cell, supports multiple images. For more version differences, see [Schema Version Migration Guide](/xparse/schema-migration)
+          description: Array of images within the cell, supports multiple images. 
           items:
             $ref: '#/components/schemas/ImageData'
         objects:
@@ -1003,7 +1003,7 @@ tags:
 
       ## Features
       - 📄 Multi-format Support: Supports PDF, images, and various other document formats
-      - 🔍 Multi-engine Support: Supports TextIn, GUI, and other parsing engines
+      - 🔍 Multi-engine Support: Supports TextIn, and other parsing engines
       - 📊 Structured Output: Converts documents into standardized element structures
       - 🎯 Semantic Preservation: Preserves the semantic structure of documents, such as titles, paragraphs, tables, etc.
 
