@@ -1,0 +1,248 @@
+openapi: 3.0.3
+info:
+  title: TextIn Finance API
+  description: |
+    Query account balance and service package quota.
+  version: 1.0.0
+  contact:
+    name: TextIn API Team
+
+servers:
+  - url: https://api.textin.ai
+    description: Production Environment
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /user/finance/balance:
+    get:
+      summary: Query Account Balance
+      description: |
+        Returns the account balance overview.
+
+        Note: for monthly-subscription users the balance may be `0` — their available quota is reflected in the package endpoint instead.
+      operationId: financeBalance
+      tags:
+        - Finance
+      responses:
+        '200':
+          description: Balance information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+              examples:
+                success:
+                  summary: Success Example
+                  value:
+                    code: 200
+                    msg: "success"
+                    data:
+                      balance: 999.1
+                      available_balance: 999.1
+                      unavailable_balance: 0
+
+  /user/finance/package:
+    get:
+      summary: Query Package Quota
+      description: |
+        Returns the service packages of the account, including total / remaining / used counts and their validity windows.
+
+        The endpoint does not directly return an "expired / exhausted" status — the caller determines it from `end_time` (earlier than now means expired) and `remain_count` (`0` means exhausted).
+      operationId: financePackage
+      tags:
+        - Finance
+      parameters:
+        - name: api_path
+          in: query
+          required: true
+          description: |
+            The service path to query. Missing this parameter returns "Invalid params".
+            - xParse: `/ai/service/v1/pdf_to_markdown`
+            - DocFlow: `/docflow`
+          schema:
+            type: string
+            example: '/ai/service/v1/pdf_to_markdown'
+        - name: include_all
+          in: query
+          required: false
+          description: |
+            Whether to include expired packages.
+            - `0` (default): only packages currently in effect
+            - `1`: all packages, including expired ones
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+      responses:
+        '200':
+          description: Package list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageResponse'
+              examples:
+                docflow:
+                  summary: DocFlow Example
+                  value:
+                    code: 200
+                    msg: "success"
+                    data:
+                      list:
+                        - id: 294361
+                          service_list: ["docflow"]
+                          total_count: 10
+                          remain_count: 10
+                          use_count: 0
+                          create_time: "2026-09-08 18:05:49"
+                          start_time: "2026-09-08 18:05:49"
+                          end_time: "2026-09-23 23:59:59"
+                xparse:
+                  summary: xParse Example (api_path=/ai/service/v1/pdf_to_markdown)
+                  value:
+                    code: 200
+                    msg: "success"
+                    data:
+                      list:
+                        - id: 1
+                          service_list: ["pdf_to_markdown"]
+                          total_count: 1000
+                          remain_count: 299
+                          use_count: 701
+                          create_time: "2026-08-29 18:05:46"
+                          start_time: "2026-08-29 18:05:46"
+                          end_time: "2027-08-29 23:59:59"
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: 'Please [Sign in to TextIn](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - API Keys" to view x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: 'Please [Sign in to TextIn](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - API Keys" to view x-ti-secret-code'
+
+  schemas:
+    BalanceResponse:
+      type: object
+      required:
+        - code
+        - msg
+      properties:
+        code:
+          type: integer
+          description: |
+            Status code
+            - 200: Success
+            - 40101: x-ti-app-id or x-ti-secret-code is empty
+            - 40102: x-ti-app-id or x-ti-secret-code is invalid, authentication failed
+            - 40004: Parameter error, please check the technical documentation and verify the parameters
+            - 500: Internal server error
+          example: 200
+        msg:
+          type: string
+          description: Status message
+          example: "success"
+        data:
+          $ref: '#/components/schemas/BalanceData'
+
+    BalanceData:
+      type: object
+      description: |
+        Account balance overview.
+      properties:
+        balance:
+          type: number
+          description: Account balance (= available_balance + unavailable_balance)
+          example: 999.1
+        available_balance:
+          type: number
+          description: Currently available balance
+          example: 999.1
+        unavailable_balance:
+          type: number
+          description: Balance pending activation
+          example: 0
+
+    PackageResponse:
+      type: object
+      required:
+        - code
+        - msg
+      properties:
+        code:
+          type: integer
+          description: |
+            Status code
+            - 200: Success
+            - 40101: x-ti-app-id or x-ti-secret-code is empty
+            - 40102: x-ti-app-id or x-ti-secret-code is invalid, authentication failed
+            - 40004: Parameter error, please check the technical documentation and verify the parameters
+            - 500: Internal server error
+          example: 200
+        msg:
+          type: string
+          description: Status message
+          example: "success"
+        data:
+          type: object
+          properties:
+            list:
+              type: array
+              items:
+                $ref: '#/components/schemas/Package'
+
+    Package:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Package ID
+          example: 294361
+        service_list:
+          type: array
+          description: The services this package covers
+          items:
+            type: string
+          example: ["docflow"]
+        create_time:
+          type: string
+          description: Package activation time, format yyyy-MM-dd HH:mm:ss
+          example: "2026-09-08 18:05:49"
+        total_count:
+          type: integer
+          description: Total quota
+          example: 10
+        remain_count:
+          type: integer
+          description: Remaining quota (`0` means exhausted)
+          example: 10
+        use_count:
+          type: integer
+          description: Used quota
+          example: 0
+        start_time:
+          type: string
+          description: Effective time
+          example: "2026-09-08 18:05:49"
+        end_time:
+          type: string
+          description: Expiry time (earlier than now means expired)
+          example: "2026-09-23 23:59:59"
+
+tags:
+  - name: Finance
+    description: |
+      Query account balance and service package quota.
+
+      ## Authentication
+      Pass `x-ti-app-id` and `x-ti-secret-code` in the request headers (your account's App ID / Secret Code). A missing credential returns `40101`.
+
+      ## Response Format
+      JSON. `code=200` with `msg=success` indicates success. Each response carries an `x_request_id` header for troubleshooting.

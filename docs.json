@@ -48,6 +48,12 @@
               "xparse/extract/response-format",
               "xparse/extract/best-practices"
             ]
+          },
+          {
+            "group": "Finance",
+            "pages": [
+              "xparse/account/balance-and-quota"
+            ]
           }
         ]
       },
@@ -66,6 +72,13 @@
             "group": "Extract API",
             "pages": [
               "api-reference/endpoint/extract-v3"
+            ]
+          },
+          {
+            "group": "Finance API",
+            "pages": [
+              "api-reference/endpoint/finance/balance",
+              "api-reference/endpoint/finance/package"
             ]
           }
         ]

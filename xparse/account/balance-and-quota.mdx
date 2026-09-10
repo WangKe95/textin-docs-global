@@ -1,0 +1,154 @@
+---
+title: "Balance & Package Quota"
+description: "Check your account balance and service package quota before and during API usage."
+---
+
+## Overview
+
+TextIn offers two independent read-only endpoints to monitor your account. Use them to check funds before a batch job, or to build low-balance alerts and quota dashboards.
+
+<Info>
+  Both endpoints require your App ID and Secret Code. See [Authentication](/xparse/authentication) to obtain your credentials and set the `TEXTIN_APP_ID` and `TEXTIN_SECRET_CODE` environment variables used in the examples below.
+</Info>
+
+<CardGroup cols={2}>
+  <Card title="Account Balance" icon="wallet" href="/api-reference/endpoint/finance/balance">
+    Your total prepaid balance and how much of it is currently available. Applies to pay-as-you-go usage.
+  </Card>
+  <Card title="Package Quota" icon="box" href="/api-reference/endpoint/finance/package">
+    Per-service package counts (total / remaining / used) and validity windows.
+  </Card>
+</CardGroup>
+
+## Balance vs. package quota — which one applies to you
+
+The two endpoints answer different questions. Which one reflects your usable capacity depends on how you pay:
+
+| If you are on... | Your capacity is reflected in... | Check with |
+| --- | --- | --- |
+| Pay-as-you-go | Account balance | `GET /user/finance/balance` |
+| A service package / subscription | Package remaining count | `GET /user/finance/package` |
+
+<Tip>
+  Package users often see a balance of `0` — this is expected. Their usable capacity lives in the package endpoint, not the balance endpoint. Always check the endpoint that matches your billing model.
+</Tip>
+
+## Check your account balance
+
+The balance endpoint takes no parameters.
+
+<Tabs>
+  <Tab title="cURL">
+    ```bash
+    curl "https://api.textin.ai/user/finance/balance" \
+      -H "x-ti-app-id: $TEXTIN_APP_ID" \
+      -H "x-ti-secret-code: $TEXTIN_SECRET_CODE"
+    ```
+  </Tab>
+  <Tab title="Python (requests)">
+    ```python
+    import os
+    import requests
+
+    headers = {
+        "x-ti-app-id": os.environ["TEXTIN_APP_ID"],
+        "x-ti-secret-code": os.environ["TEXTIN_SECRET_CODE"],
+    }
+
+    resp = requests.get(
+        "https://api.textin.ai/user/finance/balance",
+        headers=headers,
+    )
+    print(resp.json())
+    ```
+  </Tab>
+</Tabs>
+
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "balance": 999.1,
+    "available_balance": 999.1,
+    "unavailable_balance": 0
+  }
+}
+```
+
+`balance` equals `available_balance` plus `unavailable_balance` (funds pending activation). Spend against `available_balance`.
+
+## Check your package quota
+
+The package endpoint requires an `api_path` query parameter identifying the service. By default it returns only packages currently in effect; pass `include_all=1` to include expired ones.
+
+<Tabs>
+  <Tab title="cURL">
+    ```bash
+    curl "https://api.textin.ai/user/finance/package?api_path=/ai/service/v1/pdf_to_markdown" \
+      -H "x-ti-app-id: $TEXTIN_APP_ID" \
+      -H "x-ti-secret-code: $TEXTIN_SECRET_CODE"
+    ```
+  </Tab>
+  <Tab title="Python (requests)">
+    ```python
+    import os
+    import requests
+
+    headers = {
+        "x-ti-app-id": os.environ["TEXTIN_APP_ID"],
+        "x-ti-secret-code": os.environ["TEXTIN_SECRET_CODE"],
+    }
+
+    resp = requests.get(
+        "https://api.textin.ai/user/finance/package",
+        headers=headers,
+        params={"api_path": "/ai/service/v1/pdf_to_markdown"},
+    )
+    print(resp.json())
+    ```
+  </Tab>
+</Tabs>
+
+Common `api_path` values:
+
+| Service | `api_path` |
+| --- | --- |
+| xParse | `/ai/service/v1/pdf_to_markdown` |
+| DocFlow | `/docflow` |
+
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "service_list": ["pdf_to_markdown"],
+        "total_count": 1000,
+        "remain_count": 299,
+        "use_count": 701,
+        "create_time": "2026-08-29 18:05:46",
+        "start_time": "2026-08-29 18:05:46",
+        "end_time": "2027-08-29 23:59:59"
+      }
+    ]
+  }
+}
+```
+
+<Note>
+  The endpoint does not return an explicit "expired" or "exhausted" status. Determine it yourself: a package is **expired** when `end_time` is earlier than now, and **exhausted** when `remain_count` is `0`.
+</Note>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Balance API Reference" icon="wallet" href="/api-reference/endpoint/finance/balance">
+    Full request and response schema for the balance endpoint.
+  </Card>
+  <Card title="Package API Reference" icon="box" href="/api-reference/endpoint/finance/package">
+    Full request and response schema for the package endpoint.
+  </Card>
+</CardGroup>
