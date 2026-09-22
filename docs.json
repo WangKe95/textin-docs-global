@@ -17,68 +17,104 @@
     ]
   },
   "navigation": {
-    "tabs": [
+    "versions": [
       {
-        "tab": "Guides",
-        "groups": [
+        "version": "xParse",
+        "tabs": [
           {
-            "group": "Getting Started",
-            "pages": [
-              "xparse/overview",
-              "xparse/authentication",
-              "xparse/supported-files",
-              "xparse/errors"
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "Getting Started",
+                "pages": [
+                  "xparse/overview",
+                  "xparse/authentication",
+                  "xparse/supported-files",
+                  "xparse/errors"
+                ]
+              },
+              {
+                "group": "Parse",
+                "pages": [
+                  "xparse/parse/quickstart",
+                  "xparse/parse/configuration",
+                  "xparse/parse/response-format",
+                  "xparse/parse/async-processing",
+                  "xparse/parse/examples"
+                ]
+              },
+              {
+                "group": "Extract",
+                "pages": [
+                  "xparse/extract/quickstart",
+                  "xparse/extract/schema-guide",
+                  "xparse/extract/response-format",
+                  "xparse/extract/best-practices"
+                ]
+              },
+              {
+                "group": "Finance",
+                "pages": [
+                  "xparse/account/balance-and-quota"
+                ]
+              }
             ]
           },
           {
-            "group": "Parse",
-            "pages": [
-              "xparse/parse/quickstart",
-              "xparse/parse/configuration",
-              "xparse/parse/response-format",
-              "xparse/parse/async-processing",
-              "xparse/parse/examples"
-            ]
-          },
-          {
-            "group": "Extract",
-            "pages": [
-              "xparse/extract/quickstart",
-              "xparse/extract/schema-guide",
-              "xparse/extract/response-format",
-              "xparse/extract/best-practices"
-            ]
-          },
-          {
-            "group": "Finance",
-            "pages": [
-              "xparse/account/balance-and-quota"
+            "tab": "API",
+            "groups": [
+              {
+                "group": "Parse API",
+                "pages": [
+                  "api-reference/endpoint/xparse/v1/parse-sync",
+                  "api-reference/endpoint/xparse/v1/parse-async",
+                  "api-reference/endpoint/xparse/v1/parse-async-status"
+                ]
+              },
+              {
+                "group": "Extract API",
+                "pages": [
+                  "api-reference/endpoint/extract-v3"
+                ]
+              },
+              {
+                "group": "Finance API",
+                "pages": [
+                  "api-reference/endpoint/finance/balance",
+                  "api-reference/endpoint/finance/package"
+                ]
+              }
             ]
           }
         ]
       },
       {
-        "tab": "API",
-        "groups": [
+        "version": "Document Crop & Enhance",
+        "tabs": [
           {
-            "group": "Parse API",
-            "pages": [
-              "api-reference/endpoint/xparse/v1/parse-sync",
-              "api-reference/endpoint/xparse/v1/parse-async",
-              "api-reference/endpoint/xparse/v1/parse-async-status"
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "Document Crop & Enhance",
+                "pages": [
+                  "document-crop/quickstart",
+                  "document-crop/configuration",
+                  "document-crop/response-format",
+                  "document-crop/supported-files",
+                  "document-crop/errors"
+                ]
+              }
             ]
           },
           {
-            "group": "Extract API",
-            "pages": [
-              "api-reference/endpoint/extract-v3"
-            ]
-          },
-          {
-            "group": "Finance API",
-            "pages": [
-              "api-reference/endpoint/finance/balance",
-              "api-reference/endpoint/finance/package"
+            "tab": "API",
+            "groups": [
+              {
+                "group": "Document Crop & Enhance",
+                "pages": [
+                  "api-reference/endpoint/document-crop/document-crop-image"
+                ]
+              }
             ]
           }
         ]

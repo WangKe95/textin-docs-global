@@ -1,0 +1,44 @@
+---
+title: "Errors"
+description: "Error codes returned by the Document Crop & Enhance API."
+---
+
+The API always responds with **HTTP 200**, including for errors. Determine success or failure from the `code` field in the response body (`200` means success); an HTTP client that only checks the HTTP status will treat errors as success.
+
+Every response also includes an `x_request_id` field that uniquely identifies the request. Include it when contacting support.
+
+## Authentication errors
+
+| Code | Description | Solution |
+| --- | --- | --- |
+| `40101` | `x-ti-app-id` or `x-ti-secret-code` is empty | Include both authentication headers. |
+| `40102` | `x-ti-app-id` or `x-ti-secret-code` is invalid | Verify your App ID and Secret Code. |
+| `40103` | Client IP address is not on the IP allowlist | Add the client IP address to the IP allowlist. |
+
+## Request and file errors
+
+| Code | Description | Solution |
+| --- | --- | --- |
+| `40301` | Unsupported image type. The API returns the detected type, e.g. "Current file type is .gif" | Use a supported image type. |
+| `40302` | File size exceeds the 50 MB limit | Reduce the file size. |
+| `40303` | Unsupported file type | Use a supported file type. |
+| `40304` | Invalid image dimensions. Width and height must be between 20 and 10,000 pixels | Resize the image to a supported size. |
+| `40305` | No file uploaded | Include a file in the request. |
+| `40400` | Invalid request URL | Verify the file URL is correct and reachable. |
+
+## Account and parameter errors
+
+| Code | Description | Solution |
+| --- | --- | --- |
+| `40003` | Insufficient balance | Top up the account before using the service. |
+| `40004` | Invalid request parameters | Check the request parameters against the documentation. |
+| `40007` | The service does not exist or is not published | Verify the service is available on your account. |
+| `40008` | The service is not enabled | Enable the service in the console before retrying. |
+
+## Rate limiting and service errors
+
+| Code | Description | Solution |
+| --- | --- | --- |
+| `40306` | QPS limit exceeded | Do not retry on this status code; continued requests may trigger IP rate limiting. Contact support to raise the limit. |
+| `30203` | Upstream service failure | Retry the request later. |
+| `500` | Internal server error | Retry the request. Contact support if the problem persists. |

@@ -1,0 +1,311 @@
+openapi: 3.0.1
+info:
+  title: Document Crop & Enhance - API Documentation
+  description: |
+    The Document Crop & Enhance API detects the document in a photo or scan, removes the background surrounding
+    the document, corrects geometric distortion, and enhances image quality.
+  version: 1.0.0
+
+servers:
+  - url: https://api.textin.ai
+    description: Production server
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /ai/service/v1/crop_enhance_image:
+    post:
+      summary: Document Crop & Enhance
+      description: |
+        Detect the document in a photo or scan, remove the background surrounding the document, correct geometric distortion, and enhance image quality.
+
+        Send the input in one of two ways:
+        - `Content-Type: application/octet-stream` — the raw binary stream of a local file.
+        - `Content-Type: text/plain` — the URL of an online file (http and https are supported).
+
+        Supported formats: jpg, png, bmp, webp, pdf, tiff, single-frame gif.
+        The file size must not exceed 50 MB, and the image width and height must both be between 20 and 10000 pixels.
+        For PDF input, only the first page is processed.
+      operationId: crop_enhance_image
+      parameters:
+        - name: enhance_mode
+          in: query
+          required: false
+          description: |
+            Image enhancement mode.
+            - `1`: Brighten
+            - `2`: Enhance and sharpen
+            - `3`: Black and white
+            - `4`: Grayscale
+            - `5`: Shadow removal and enhancement
+            - `6`: Bitmap (dithered)
+            - `-1`: Disable enhancement (default)
+          schema:
+            type: integer
+            enum: [-1, 1, 2, 3, 4, 5, 6]
+            default: -1
+            example: -1
+        - name: crop_image
+          in: query
+          required: false
+          description: |
+            Whether to perform cropping.
+            - `0`: Do not crop
+            - `1`: Crop (default)
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 1
+            example: 1
+        - name: only_position
+          in: query
+          required: false
+          description: |
+            Whether to return only the crop corner points.
+            - `0`: Return the corner points and the processed image (default)
+            - `1`: Return only the crop corner points, without the cropped result image
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+            example: 0
+        - name: dewarp_image
+          in: query
+          required: false
+          description: |
+            Whether to perform distortion correction (dewarp).
+            - `0`: Do not correct
+            - `1`: Correct (default)
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 1
+            example: 1
+        - name: deblur_image
+          in: query
+          required: false
+          description: |
+            Whether to perform sharpness enhancement (deblur).
+            - `0`: Do not enhance sharpness (default)
+            - `1`: Enhance sharpness
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+            example: 0
+        - name: correct_direction
+          in: query
+          required: false
+          description: |
+            Whether to correct the image orientation.
+            - `0`: Do not correct orientation (default)
+            - `1`: Correct orientation
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+            example: 0
+        - name: round_image
+          in: query
+          required: false
+          description: |
+            Whether to return a rounded-corner crop.
+            - `0`: Do not return a rounded-corner crop (default)
+            - `1`: Return a rounded-corner crop result
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+            example: 0
+        - name: jpeg_quality
+          in: query
+          required: false
+          description: |
+            Compression quality of the cropped image. Recommended range 65-100. Defaults to 95 when not set.
+          schema:
+            type: integer
+            default: 95
+            example: 95
+        - name: size_and_positon
+          in: query
+          required: false
+          description: |
+            Client-supplied crop size and corner coordinates. When provided, the image is cropped according to these values.
+
+            Format: `width,height,x1,y1,x2,y2,x3,y3,x4,y4`
+            - `width`, `height`: target image width and height. Set to `0` to use the default values.
+            - `(x1, y1)`: top-left corner
+            - `(x2, y2)`: top-right corner
+            - `(x3, y3)`: bottom-right corner
+            - `(x4, y4)`: bottom-left corner
+
+            Note: this parameter name is spelled `size_and_positon` in the API.
+          schema:
+            type: string
+            example: "0,0,0,10,500,10,500,300,0,300"
+      requestBody:
+        required: true
+        description: |
+          The document image to process.
+
+          - With `Content-Type: application/octet-stream`, the body is the raw binary stream of a local file (not FormData or any other wrapper).
+          - With `Content-Type: text/plain`, the body is plain text containing the URL of an online file.
+
+          Supported formats: jpg, png, bmp, webp, pdf, tiff, single-frame gif. Max size 50 MB; image width and height must be between 20 and 10000 pixels.
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+          text/plain:
+            schema:
+              type: string
+              example: "https://example.com/example.jpg"
+      responses:
+        "200":
+          description: Response result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CropEnhanceResponse"
+              example:
+                code: 200
+                message: "success"
+                msg: "success"
+                version: "v2.0.8"
+                duration: 100
+                x_request_id: "7596b8c9d2ddbc9924b66651e9efc174"
+                result:
+                  origin_width: 2000
+                  origin_height: 3000
+                  image_list:
+                    - cropped_width: 1500
+                      cropped_height: 1800
+                      image: "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBD"
+                      position: [0, 10, 500, 10, 500, 300, 0, 300]
+                      angle: 90
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: 'Please [Sign in to TextIn](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - API Keys" to view x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: 'Please [Sign in to TextIn](https://www.textin.ai/console/dashboard/setting) and navigate to "Console - API Keys" to view x-ti-secret-code'
+  schemas:
+    CropEnhanceResponse:
+      type: object
+      required:
+        - code
+        - message
+        - x_request_id
+      properties:
+        code:
+          type: integer
+          description: |
+            Status code. See the response description for the full list of error codes.
+            - 200: Success
+            - 40101: x-ti-app-id or x-ti-secret-code is empty
+            - 40102: x-ti-app-id or x-ti-secret-code is invalid, authentication failed
+            - 40103: Client IP is not in the allowlist
+            - 40003: Insufficient balance, please recharge before using
+            - 40004: Parameter error, please check the technical documentation and verify the parameters
+            - 40007: The service does not exist or is not published
+            - 40008: The service is not enabled; enable it in the console before retrying
+            - 40301: Unsupported image type. The API returns the detected type, e.g., "Current file type is .gif"
+            - 40302: File size exceeds the 50 MB limit
+            - 40303: Unsupported file type
+            - 40304: Invalid image dimensions; width and height must be between 20 and 10,000 pixels
+            - 40305: No file uploaded
+            - 40306: QPS limit exceeded. Do not retry on this status code; continued requests may trigger IP rate limiting. Contact support to raise the limit.
+            - 40400: Invalid request URL, please check if the URL is correct
+            - 30203: Upstream service failure, please retry later
+            - 500: Internal server error
+          example: 200
+        message:
+          type: string
+          description: Response message
+          example: "success"
+        msg:
+          type: string
+          description: Response message (duplicate of message)
+          example: "success"
+        version:
+          type: string
+          description: API version number
+          example: "v2.0.8"
+        duration:
+          type: number
+          description: Processing time, in milliseconds (ms)
+          example: 100
+        x_request_id:
+          type: string
+          description: Unique identifier of the request. Present in every response.
+          example: "7596b8c9d2ddbc9924b66651e9efc174"
+        result:
+          $ref: "#/components/schemas/CropEnhanceResult"
+
+    CropEnhanceResult:
+      type: object
+      properties:
+        origin_width:
+          type: integer
+          description: Width of the original image
+          example: 2000
+        origin_height:
+          type: integer
+          description: Height of the original image
+          example: 3000
+        image_list:
+          type: array
+          description: Processed image results
+          items:
+            $ref: "#/components/schemas/CropEnhanceImage"
+
+    CropEnhanceImage:
+      type: object
+      properties:
+        cropped_width:
+          type: integer
+          description: Width of the processed image
+          example: 1500
+        cropped_height:
+          type: integer
+          description: Height of the processed image
+          example: 1800
+        image:
+          type: string
+          description: Processed image as a JPG in Base64 format. Omitted when `only_position=1`. The example value is truncated for readability.
+          example: "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBD"
+        position:
+          type: array
+          description: |
+            The four corner points of the cropped region, an array of length 8: `[x1,y1,x2,y2,x3,y3,x4,y4]`.
+            - `(x1, y1)`: top-left corner
+            - `(x2, y2)`: top-right corner
+            - `(x3, y3)`: bottom-right corner
+            - `(x4, y4)`: bottom-left corner
+          items:
+            type: integer
+          minItems: 8
+          maxItems: 8
+          example: [0, 10, 500, 10, 500, 300, 0, 300]
+        angle:
+          type: integer
+          description: |
+            Orientation angle, always present. It reports the detected orientation of the input document.
+            Orientation is detected only when `correct_direction=1`; otherwise, or when detection fails, the value is `-1`.
+            - `0`: upright (▲)
+            - `90`: rotated right (▶)
+            - `180`: upside down (▼)
+            - `270`: rotated left (◀)
+            - `-1`: not detected or detection failed
+          enum: [0, 90, 180, 270, -1]
+          example: 90

@@ -1,0 +1,141 @@
+---
+title: "Response Format"
+description: "Understand the Document Crop & Enhance API response format."
+---
+
+The API returns JSON. On success, the processed image is returned as a Base64-encoded JPG inside `result.image_list`, along with the original and cropped dimensions, the crop corner coordinates, and the detected orientation angle.
+
+## Response overview
+
+<Note>
+  The `image` value below is truncated for readability. The real response contains the full Base64-encoded JPG.
+</Note>
+
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "msg": "success",
+  "version": "v2.0.8",
+  "duration": 100,
+  "x_request_id": "7596b8c9d2ddbc9924b66651e9efc174",
+  "result": {
+    "origin_width": 2000,
+    "origin_height": 3000,
+    "image_list": [
+      {
+        "cropped_width": 1500,
+        "cropped_height": 1800,
+        "image": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBD",
+        "position": [0, 10, 500, 10, 500, 300, 0, 300],
+        "angle": 90
+      }
+    ]
+  }
+}
+```
+
+## Top-level fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `code` | integer | Application-level response code. The API always responds with HTTP 200; `200` here indicates success. See [Errors](/document-crop/errors) for other codes. |
+| `message` | string | Response message |
+| `msg` | string | Response message (duplicate of `message`) |
+| `version` | string | API version number, such as `v2.0.8` |
+| `duration` | number | Processing time, in milliseconds (ms) |
+| `x_request_id` | string | Unique request identifier, present in every response |
+| `result` | object | Processing result |
+
+## `result` fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `origin_width` | integer | Width of the original image |
+| `origin_height` | integer | Height of the original image |
+| `image_list` | array | Processed image results |
+
+## `image_list` fields
+
+Each item in `image_list` represents one processed image. `image_list` always contains a single item: for image input there is one result, and for PDF input only the first page is processed.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `cropped_width` | integer | Width of the processed image |
+| `cropped_height` | integer | Height of the processed image |
+| `image` | string | Processed image as a JPG, Base64-encoded. Omitted when `only_position=1`. |
+| `position` | array | The four corner points of the cropped region (8 values). See [Crop coordinates](#crop-coordinates). |
+| `angle` | integer | Orientation angle. Always present. See [Orientation angle](#orientation-angle). |
+
+## Crop coordinates
+
+`position` is an array of 8 values describing the four corner points of the cropped region in the original image:
+
+```text
+[x1, y1, x2, y2, x3, y3, x4, y4]
+```
+
+The points are ordered as:
+
+```text
+(x1,y1) -------- (x2,y2)
+   |                |
+   |  Cropped Area  |
+   |                |
+(x4,y4) -------- (x3,y3)
+```
+
+| Index | Point | Corner |
+| --- | --- | --- |
+| `0, 1` | (x1, y1) | Top-left |
+| `2, 3` | (x2, y2) | Top-right |
+| `4, 5` | (x3, y3) | Bottom-right |
+| `6, 7` | (x4, y4) | Bottom-left |
+
+Coordinates are in pixels, relative to the original image.
+
+## Orientation angle
+
+`angle` is always present in each `image_list` item. It reports the detected orientation of the input document, using the values below. Orientation is detected only when `correct_direction=1`; otherwise, or when detection fails, the value is `-1`.
+
+| Value | Orientation |
+| --- | --- |
+| `0` | Upright (▲) |
+| `90` | Rotated right (▶) |
+| `180` | Upside down (▼) |
+| `270` | Rotated left (◀) |
+| `-1` | Not detected or detection failed |
+
+## Save the processed image
+
+The `image` field is a Base64-encoded JPG. It is raw Base64 without a `data:image/jpeg;base64,` prefix, so add the prefix yourself if you embed it directly in an HTML `<img>` tag. Decode it to write the file to disk:
+
+```python
+import base64
+
+image_base64 = result["result"]["image_list"][0]["image"]
+
+with open("output.jpg", "wb") as f:
+    f.write(base64.b64decode(image_base64))
+```
+
+## Related resources
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/document-crop/quickstart">
+    Process your first image.
+  </Card>
+
+  <Card title="Configuration" icon="sliders" href="/document-crop/configuration">
+    Control cropping, correction, and enhancement.
+  </Card>
+
+  <Card title="API Reference" icon="code" href="/api-reference/endpoint/document-crop/document-crop-image">
+    Full request and response schema with an interactive playground.
+  </Card>
+
+  <Card title="Errors" icon="triangle-exclamation" href="/document-crop/errors">
+    Error codes and how to resolve them.
+  </Card>
+</CardGroup>

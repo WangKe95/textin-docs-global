@@ -1,0 +1,269 @@
+---
+title: "Quickstart"
+description: "Process your first document image with the TextIn Document Crop & Enhance API."
+---
+
+Use the **Document Crop & Enhance API** to turn document photos and scans into clean, corrected images before OCR, parsing, archiving, printing, or display.
+
+With a single request, the API can automatically detect document edges, crop away the surrounding background, correct perspective and orientation, and apply optional image enhancements.
+
+## What it does
+
+<CardGroup cols={2}>
+  <Card title="Auto crop documents" icon="crop">
+    Automatically detect the document boundary and crop away the surrounding background.
+
+    The response also returns the four corner points of the detected document region, which can be used for downstream processing or visualization.
+
+    Typical inputs include documents photographed on desks, receipts captured with extra background, and pages taken from imperfect distances or angles.
+  </Card>
+
+  <Card title="Correct perspective and orientation" icon="ruler-combined">
+    Straighten document photos captured at an angle and correct geometric distortion so the page appears flat and rectangular.
+
+    You can also enable orientation correction for sideways or incorrectly rotated document images.
+  </Card>
+
+  <Card title="Enhance document images" icon="wand-magic-sparkles">
+    Apply optional image enhancements based on the source image and desired output:
+
+    - **Enhancement mode** (choose one): brighten, enhance and sharpen, black and white, grayscale, shadow removal, or bitmap.
+    - **Deblur**: sharpen the image, applied independently of the enhancement mode.
+
+    These options can help improve readability and produce cleaner images for OCR, archiving, printing, or display.
+  </Card>
+</CardGroup>
+
+## Common use cases
+
+The Document Crop & Enhance API can be used to prepare:
+
+- smartphone photos for OCR and text recognition;
+- receipts, forms, contracts, and other paper documents for digital archiving;
+- photographed pages for printing or copying;
+- cleaner document images for sharing or display;
+- document images before downstream parsing or data extraction.
+
+## Typical processing flow
+
+A single request can combine the processing steps you need:
+
+**Document photo → Auto crop → Perspective correction → Orientation correction → Enhance → Clean document image**
+
+Each processing option can be enabled or disabled independently.
+
+## Before you start
+
+You need:
+
+- Your TextIn **App ID** and **Secret Code**. Find them in the [TextIn console](https://www.textin.ai/console) under **API Keys**, and send them in the `x-ti-app-id` and `x-ti-secret-code` request headers.
+- A document image (jpg, png, bmp, webp, pdf, tiff, or single-frame gif).
+
+<Note>
+  For PDF input, only the first page is processed. Multi-page PDFs are accepted, but only the first page is cropped, corrected, and enhanced.
+</Note>
+
+## Set your credentials
+
+```bash
+export TEXTIN_APP_ID="your-app-id"
+export TEXTIN_SECRET_CODE="your-secret-code"
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:TEXTIN_APP_ID="your-app-id"
+$env:TEXTIN_SECRET_CODE="your-secret-code"
+```
+
+## Send a request
+
+The endpoint accepts input in one of two ways. Send the raw file bytes with `Content-Type: application/octet-stream`, or send a file URL as plain text with `Content-Type: text/plain`.
+
+<Note>
+  The API always responds with HTTP 200. Check the `code` field in the response body to determine success (`200`) or failure.
+</Note>
+
+<Tabs>
+  <Tab title="cURL">
+    ```bash
+    # Option 1: upload a local file (binary stream)
+    curl --location --request POST "https://api.textin.ai/ai/service/v1/crop_enhance_image" \
+      --header "x-ti-app-id: $TEXTIN_APP_ID" \
+      --header "x-ti-secret-code: $TEXTIN_SECRET_CODE" \
+      --header "Content-Type: application/octet-stream" \
+      --data-binary "@/path/to/example.jpg"
+
+    # Option 2: pass a file URL (plain text)
+    curl --location --request POST "https://api.textin.ai/ai/service/v1/crop_enhance_image" \
+      --header "x-ti-app-id: $TEXTIN_APP_ID" \
+      --header "x-ti-secret-code: $TEXTIN_SECRET_CODE" \
+      --header "Content-Type: text/plain" \
+      --data-raw "https://example.com/example.jpg"
+
+    # Option 3: enable enhancements with query parameters
+    curl --location --request POST "https://api.textin.ai/ai/service/v1/crop_enhance_image?correct_direction=1&enhance_mode=5" \
+      --header "x-ti-app-id: $TEXTIN_APP_ID" \
+      --header "x-ti-secret-code: $TEXTIN_SECRET_CODE" \
+      --header "Content-Type: application/octet-stream" \
+      --data-binary "@/path/to/example.jpg"
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    import os
+    import requests
+
+    def get_file_content(file_path):
+        with open(file_path, "rb") as fp:
+            return fp.read()
+
+    class CropEnhanceClient:
+        def __init__(self, img_path=None, is_url=False, params=None):
+            self._url = "https://api.textin.ai/ai/service/v1/crop_enhance_image"
+            self._app_id = os.environ["TEXTIN_APP_ID"]
+            self._secret_code = os.environ["TEXTIN_SECRET_CODE"]
+            self._img_path = img_path
+            self._is_url = is_url
+            # Processing options, sent as query parameters. See the Configuration page.
+            self._params = params or {}
+
+        def process(self):
+            headers = {
+                "x-ti-app-id": self._app_id,
+                "x-ti-secret-code": self._secret_code,
+            }
+            if self._is_url:
+                headers["Content-Type"] = "text/plain"
+                body = self._img_path
+            else:
+                headers["Content-Type"] = "application/octet-stream"
+                body = get_file_content(self._img_path)
+            resp = requests.post(self._url, params=self._params, data=body, headers=headers, timeout=60)
+            resp.raise_for_status()
+            result = resp.json()
+            # The API always responds with HTTP 200. Check the `code` field to detect errors.
+            if result.get("code") != 200:
+                raise RuntimeError(f"API error {result.get('code')}: {result.get('message')}")
+            return result
+
+    if __name__ == "__main__":
+        # Option 1: upload a local file (default crop + dewarp)
+        print(CropEnhanceClient(img_path="example.jpg").process())
+        # Option 2: pass a file URL
+        print(CropEnhanceClient(img_path="https://example.com/example.jpg", is_url=True).process())
+        # Option 3: enable orientation correction and shadow-removal enhancement
+        print(CropEnhanceClient(
+            img_path="example.jpg",
+            params={"correct_direction": 1, "enhance_mode": 5},
+        ).process())
+    ```
+  </Tab>
+
+  <Tab title="Node.js">
+    ```javascript
+    // Requires Node.js 18+, which includes the Fetch API by default.
+    const fs = require("fs");
+
+    const appId = process.env.TEXTIN_APP_ID;
+    const secretCode = process.env.TEXTIN_SECRET_CODE;
+    const url = "https://api.textin.ai/ai/service/v1/crop_enhance_image";
+
+    async function cropEnhance(input, isUrl = false, params = {}) {
+      const contentType = isUrl ? "text/plain" : "application/octet-stream";
+      const body = isUrl ? input : fs.readFileSync(input);
+      // Processing options, sent as query parameters. See the Configuration page.
+      const query = new URLSearchParams(params).toString();
+      const requestUrl = query ? `${url}?${query}` : url;
+
+      const response = await fetch(requestUrl, {
+        method: "POST",
+        headers: {
+          "x-ti-app-id": appId,
+          "x-ti-secret-code": secretCode,
+          "Content-Type": contentType,
+        },
+        body,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      // The API always responds with HTTP 200. Check the `code` field to detect errors.
+      if (data.code !== 200) {
+        throw new Error(`API error ${data.code}: ${data.message}`);
+      }
+      console.log(data);
+    }
+
+    // Option 1: upload a local file (default crop + dewarp)
+    cropEnhance("example.jpg", false);
+    // Option 2: pass a file URL
+    cropEnhance("https://example.com/example.jpg", true);
+    // Option 3: enable orientation correction and shadow-removal enhancement
+    cropEnhance("example.jpg", false, { correct_direction: 1, enhance_mode: 5 });
+    ```
+  </Tab>
+</Tabs>
+
+By default, the endpoint crops and dewarps the document. To control cropping, correction, and enhancement, pass query parameters such as `?correct_direction=1&enhance_mode=5`. See [Configuration](/document-crop/configuration) for the full list.
+
+## Read the response
+
+The response returns the processed image as a Base64-encoded JPG, plus dimensions and crop coordinates. The `image` value below is truncated for readability.
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "msg": "success",
+  "version": "v2.0.8",
+  "duration": 100,
+  "x_request_id": "7596b8c9d2ddbc9924b66651e9efc174",
+  "result": {
+    "origin_width": 2000,
+    "origin_height": 3000,
+    "image_list": [
+      {
+        "cropped_width": 1500,
+        "cropped_height": 1800,
+        "image": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBD",
+        "position": [0, 10, 500, 10, 500, 300, 0, 300],
+        "angle": 90
+      }
+    ]
+  }
+}
+```
+
+Parse the response and decode the `image` field to save the processed image:
+
+```python
+import base64
+
+result = CropEnhanceClient(img_path="example.jpg").process()
+image_base64 = result["result"]["image_list"][0]["image"]
+
+with open("output.jpg", "wb") as f:
+    f.write(base64.b64decode(image_base64))
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="sliders" href="/document-crop/configuration">
+    Control cropping, correction, and enhancement with query parameters.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/endpoint/document-crop/document-crop-image">
+    Every parameter, response field, and an interactive playground.
+  </Card>
+  <Card title="Supported Files & Limits" icon="file" href="/document-crop/supported-files">
+    Supported formats, file size, and image dimensions.
+  </Card>
+  <Card title="Errors" icon="triangle-exclamation" href="/document-crop/errors">
+    Error codes and how to resolve them.
+  </Card>
+</CardGroup>

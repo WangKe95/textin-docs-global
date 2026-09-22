@@ -1,0 +1,42 @@
+---
+title: "Supported Files & Limits"
+description: "Review supported file types, input requirements, and processing limits."
+---
+
+## Supported file types
+
+| Category | Supported formats |
+| --- | --- |
+| Images | `.jpg`, `.png`, `.bmp`, `.webp`, `.tiff`, single-frame `.gif` |
+| PDF | `.pdf` |
+
+<Note>
+  Each request processes a single image and returns one result synchronously. For multi-page or multi-frame input (PDF, multi-frame GIF), only the first page or frame is processed. Only single-frame GIFs are supported.
+</Note>
+
+## Input requirements
+
+| Requirement | Limit |
+| --- | --- |
+| Maximum file size | 50 MB |
+| Image width | Between 20 and 10,000 pixels |
+| Image height | Between 20 and 10,000 pixels |
+
+## How to send the input
+
+The endpoint accepts input in one of two ways, selected by the `Content-Type` header:
+
+| Content-Type | Request body |
+| --- | --- |
+| `application/octet-stream` | Send the raw bytes of the file, not FormData or any other wrapper. |
+| `text/plain` | The URL of a remote file, as plain text (http and https are supported). |
+
+<Note>
+  For URL input, the remote file must also stay within the 50 MB size limit and the 20-10,000 pixel dimension range.
+</Note>
+
+## Related resources
+
+- [Quickstart](/document-crop/quickstart)
+- [API Reference](/api-reference/endpoint/document-crop/document-crop-image)
+- [Errors](/document-crop/errors)

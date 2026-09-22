@@ -1,0 +1,198 @@
+---
+title: "Configuration"
+description: "Control cropping, correction, and enhancement with query parameters."
+---
+
+All processing options are passed as **query parameters** appended to the request URL. Every parameter is optional — with no parameters, the API crops and dewarps the document with default settings.
+
+```bash
+POST /ai/service/v1/crop_enhance_image?crop_image=1&dewarp_image=1&enhance_mode=5&correct_direction=1
+```
+
+<Note>
+  Enabling every option does not necessarily improve the result. Cropping and dewarping are on by default; enhancement and orientation correction are off by default and should be enabled based on the input image.
+</Note>
+
+This page explains what each parameter does and when to use it. For exact types, defaults, and an interactive playground, see the [API Reference](/api-reference/endpoint/document-crop/document-crop-image).
+
+## Common configurations
+
+<Tabs>
+  <Tab title="Default (crop + dewarp)">
+    Send no parameters. The API detects the document, crops away the background, and corrects geometric distortion.
+
+    ```bash
+    POST /ai/service/v1/crop_enhance_image
+    ```
+  </Tab>
+
+  <Tab title="Photographed document">
+    Correct orientation and remove shadows for photos taken at an angle or under uneven lighting.
+
+    ```bash
+    POST /ai/service/v1/crop_enhance_image?correct_direction=1&enhance_mode=5
+    ```
+  </Tab>
+
+  <Tab title="Return crop coordinates only">
+    Return only the crop corner points, without the processed image — useful when you crop on your own client.
+
+    ```bash
+    POST /ai/service/v1/crop_enhance_image?only_position=1
+    ```
+  </Tab>
+
+  <Tab title="Scan-like output">
+    Produce a clean black-and-white result for text documents.
+
+    ```bash
+    POST /ai/service/v1/crop_enhance_image?enhance_mode=3
+    ```
+  </Tab>
+</Tabs>
+
+## Cropping
+
+### `crop_image`
+
+Whether to crop the detected document out of the image.
+
+| Field | Type | Values | Default |
+| --- | --- | --- | --- |
+| `crop_image` | integer | `0`, `1` | `1` |
+
+- `0`: Do not crop.
+- `1`: Crop the detected document.
+
+### `only_position`
+
+Whether to omit the processed image from the response.
+
+| Field | Type | Values | Default |
+| --- | --- | --- | --- |
+| `only_position` | integer | `0`, `1` | `0` |
+
+- `0`: Return the processed image along with `position`, `cropped_width`, `cropped_height`, and `angle`.
+- `1`: Omit the `image` field. The response still includes `position`, `cropped_width`, `cropped_height`, and `angle`. Use this option when you want to perform the crop on the client side.
+
+### `round_image`
+
+Whether to return the cropped image with rounded corners.
+
+| Field | Type | Values | Default |
+| --- | --- | --- | --- |
+| `round_image` | integer | `0`, `1` | `0` |
+
+- `0`: Do not round the corners.
+- `1`: Return the cropped image with rounded corners.
+
+### `size_and_positon`
+
+Crop the image using client-supplied dimensions and corner coordinates instead of automatic detection.
+
+| Field | Type | Default |
+| --- | --- | --- |
+| `size_and_positon` | string | — |
+
+Format: `width,height,x1,y1,x2,y2,x3,y3,x4,y4`
+
+- `width`, `height`: target image width and height. Set to `0` to use the default values.
+- `(x1, y1)`: top-left corner
+- `(x2, y2)`: top-right corner
+- `(x3, y3)`: bottom-right corner
+- `(x4, y4)`: bottom-left corner
+
+<Note>
+  This parameter name is spelled `size_and_positon` (without the second `i`) in the API. Use it exactly as shown.
+</Note>
+
+## Correction
+
+Correction includes two independent operations: `dewarp_image` fixes geometric distortion (curvature and perspective), and `correct_direction` fixes the page orientation (90°/180°/270° rotation).
+
+### `dewarp_image`
+
+Whether to correct geometric distortion, such as page curvature and perspective distortion.
+
+| Field | Type | Values | Default |
+| --- | --- | --- | --- |
+| `dewarp_image` | integer | `0`, `1` | `1` |
+
+- `0`: Do not correct distortion.
+- `1`: Correct distortion.
+
+### `correct_direction`
+
+Whether to correct the image orientation. The `angle` field is always present in the response; orientation is only detected when this option is enabled, otherwise `angle` is `-1`.
+
+| Field | Type | Values | Default |
+| --- | --- | --- | --- |
+| `correct_direction` | integer | `0`, `1` | `0` |
+
+- `0`: Do not correct orientation. `angle` is returned as `-1`.
+- `1`: Correct orientation and report the detected `angle`. Enable this for photos or scans that may be rotated.
+
+## Enhancement
+
+### `enhance_mode`
+
+The image enhancement mode applied to the result.
+
+| Field | Type | Values | Default |
+| --- | --- | --- | --- |
+| `enhance_mode` | integer | `-1`, `1`–`6` | `-1` |
+
+| Value | Mode | Use for |
+| --- | --- | --- |
+| `-1` | Disable enhancement (default) | Keep the original colors and tones |
+| `1` | Brighten | Dim or underexposed images |
+| `2` | Enhance and sharpen | Low-contrast or slightly blurry text |
+| `3` | Black and white | Clean, scan-like text documents |
+| `4` | Grayscale | Neutral grayscale output |
+| `5` | Shadow removal and enhancement | Photos with uneven lighting or shadows |
+| `6` | Bitmap (dithered) | High-contrast, low-color output |
+
+### `deblur_image`
+
+Whether to apply sharpness enhancement (deblur).
+
+| Field | Type | Values | Default |
+| --- | --- | --- | --- |
+| `deblur_image` | integer | `0`, `1` | `0` |
+
+- `0`: Do not enhance sharpness.
+- `1`: Enhance sharpness.
+
+`deblur_image` sharpens the image independently of `enhance_mode`. You can combine the two — for example, `enhance_mode=5` with `deblur_image=1`.
+
+## Output
+
+### `jpeg_quality`
+
+Compression quality of the cropped image.
+
+| Field | Type | Default |
+| --- | --- | --- |
+| `jpeg_quality` | integer | `95` |
+
+Recommended range is `65`–`100`. Higher values produce a larger, higher-quality image.
+
+## Related resources
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/document-crop/quickstart">
+    Process your first image.
+  </Card>
+
+  <Card title="API Reference" icon="code" href="/api-reference/endpoint/document-crop/document-crop-image">
+    Full request and response schema with an interactive playground.
+  </Card>
+
+  <Card title="Supported Files & Limits" icon="file" href="/document-crop/supported-files">
+    Review supported formats and limits.
+  </Card>
+
+  <Card title="Errors" icon="triangle-exclamation" href="/document-crop/errors">
+    Error codes and how to resolve them.
+  </Card>
+</CardGroup>
