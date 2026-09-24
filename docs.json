@@ -8,6 +8,11 @@
     "dark": "#1a66ff"
   },
   "favicon": "/favicon.png",
+  "integrations": {
+    "gtm": {
+      "tagId": "GTM-NBGKVCFN"
+    }
+  },
   "contextual": {
     "options": [
       "copy",
